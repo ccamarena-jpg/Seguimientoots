@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Google Sign-In -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <style>
   :root {
     --bg:        #2C3E6B;
@@ -54,6 +54,18 @@
   .field input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(30,58,138,0.1); }
   .btn-login { width:100%; padding:13px; background:var(--blue); border:none; border-radius:10px; color:#fff; font-family:'Inter',sans-serif; font-size:15px; font-weight:600; cursor:pointer; margin-top:6px; transition:background 0.18s,box-shadow 0.18s,transform 0.12s; }
   .btn-login:hover { background:var(--blue-h); box-shadow:0 6px 20px rgba(30,58,138,0.3); transform:translateY(-1px); }
+
+  /* Google OAuth button */
+  .btn-google {
+    width:100%; padding:11px 16px; border-radius:10px;
+    border:1.5px solid var(--border); background:#fff;
+    color:var(--text); font-family:'Inter',sans-serif;
+    font-size:14px; font-weight:500; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background 0.18s, box-shadow 0.18s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .btn-google:hover { background:#f8f9fa; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
   .login-error { color:var(--danger); font-size:12px; text-align:center; margin-top:10px; min-height:18px; font-weight:500; }
 
   /* Google Sign-In button wrapper */
@@ -263,21 +275,18 @@
     </div>
     <div class="login-sub" style="margin-top:4px">Ingresa con tu cuenta TT Audit</div>
 
-    <!-- Google Sign-In (para usuarios @ttaudit.com) -->
+    <!-- Google Sign-In — OAuth redirect flow -->
     <div class="google-signin-wrap">
-      <div id="g_id_onload"
-           data-client_id="328037756755-5h4mvkatjfvq7p0dtsnfc1rg138q7i3i.apps.googleusercontent.com"
-           data-callback="handleGoogleLogin"
-           data-auto_prompt="false">
-      </div>
-      <div class="g_id_signin"
-           data-type="standard"
-           data-size="large"
-           data-theme="outline"
-           data-text="signin_with"
-           data-shape="rectangular"
-           data-logo_alignment="left">
-      </div>
+      <button class="btn-google" onclick="startGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48" style="margin-right:8px;flex-shrink:0">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Ingresar con Google (@ttaudit.com)
+      </button>
     </div>
 
     <div class="login-divider">o ingresa con contraseña</div>
@@ -627,10 +636,40 @@ const DEMO_DATA = [
 // ══════════════════════════════════════════════
 // GOOGLE OAUTH
 // ══════════════════════════════════════════════
-function handleGoogleLogin(response) {
+// ── Google OAuth 2.0 — redirect flow (no popup) ──────────────────
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const REDIRECT_URI    = window.location.origin + window.location.pathname;
+
+function startGoogleLogin() {
+  const params = new URLSearchParams({
+    client_id:     CONFIG.GOOGLE_CLIENT_ID,
+    redirect_uri:  REDIRECT_URI,
+    response_type: 'token id_token',
+    scope:         'openid email profile',
+    nonce:         Math.random().toString(36).substring(2),
+    prompt:        'select_account'
+  });
+  window.location.href = GOOGLE_AUTH_URL + '?' + params.toString();
+}
+
+function handleGoogleRedirect() {
+  // Parse hash fragment after OAuth redirect
+  const hash = window.location.hash.substring(1);
+  if (!hash) return;
+
+  const params = {};
+  hash.split('&').forEach(part => {
+    const [k, v] = part.split('=');
+    params[decodeURIComponent(k)] = decodeURIComponent(v || '');
+  });
+
+  if (!params.id_token) return;
+
+  // Clean URL
+  history.replaceState(null, '', window.location.pathname);
+
   try {
-    // JWT payload is Base64URL encoded — convert to standard Base64 before decoding
-    const base64Url = response.credential.split('.')[1];
+    const base64Url = params.id_token.split('.')[1];
     const base64    = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const padded    = base64 + '='.repeat((4 - base64.length % 4) % 4);
     const payload   = JSON.parse(atob(padded));
@@ -638,12 +677,9 @@ function handleGoogleLogin(response) {
     const email = (payload.email || '').toLowerCase();
     const name  = payload.name || payload.given_name || email.split('@')[0];
 
-    // Show decoded email in error div temporarily for debug
-    // document.getElementById('loginError').textContent = 'DEBUG email: ' + email;
-
     if (!email.endsWith('@' + GOOGLE_DOMAIN)) {
       document.getElementById('loginError').textContent =
-        'Acceso solo para cuentas @' + GOOGLE_DOMAIN + '. Recibido: ' + email;
+        'Acceso solo para cuentas @' + GOOGLE_DOMAIN;
       return;
     }
 
@@ -653,9 +689,12 @@ function handleGoogleLogin(response) {
     bootApp(email, role, displayName);
   } catch(e) {
     document.getElementById('loginError').textContent = 'Error Google: ' + e.message;
-    console.error('Google login error:', e);
+    console.error('Google redirect error:', e);
   }
 }
+
+// Check for OAuth redirect on page load
+window.addEventListener('load', handleGoogleRedirect);
 
 // ══════════════════════════════════════════════
 // LOGIN manual (contraseña)
