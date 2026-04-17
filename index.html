@@ -701,8 +701,6 @@ function handleGoogleRedirect() {
   }
 }
 
-// Run on page load — catches the OAuth redirect
-window.addEventListener('load', handleGoogleRedirect);
 
 // ══════════════════════════════════════════════
 // LOGIN manual (contraseña)
@@ -1488,6 +1486,52 @@ function openImportModal() {
   };
   input.click();
 }
+
+// ══════════════════════════════════════════════
+// GOOGLE OAUTH REDIRECT — run last so all
+// functions (USERS, bootApp) are already defined
+// ══════════════════════════════════════════════
+(function() {
+  const hash = window.location.hash.substring(1);
+  if (!hash || !hash.includes('id_token')) return;
+
+  const params = {};
+  hash.split('&').forEach(function(part) {
+    var eqIdx = part.indexOf('=');
+    if (eqIdx === -1) return;
+    var k = decodeURIComponent(part.substring(0, eqIdx));
+    var v = decodeURIComponent(part.substring(eqIdx + 1));
+    params[k] = v;
+  });
+
+  if (!params.id_token) return;
+
+  // Clear hash from URL
+  history.replaceState(null, '', window.location.pathname);
+
+  try {
+    var parts   = params.id_token.split('.');
+    var b64     = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    var padded  = b64 + '='.repeat((4 - b64.length % 4) % 4);
+    var payload = JSON.parse(atob(padded));
+    var email   = (payload.email || '').toLowerCase();
+    var name    = payload.name || payload.given_name || email.split('@')[0];
+
+    if (!email.endsWith('@' + GOOGLE_DOMAIN)) {
+      document.getElementById('loginError').textContent =
+        'Solo cuentas @' + GOOGLE_DOMAIN + ' — recibido: ' + email;
+      return;
+    }
+
+    var role        = USERS[email] ? USERS[email].role : 'editor';
+    var displayName = USERS[email] ? USERS[email].name : name;
+    bootApp(email, role, displayName);
+
+  } catch(e) {
+    document.getElementById('loginError').textContent = 'Error Google: ' + e.message;
+    console.error('Google redirect error:', e);
+  }
+})();
 </script>
 
 </body>
