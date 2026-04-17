@@ -480,34 +480,18 @@
       <button class="city-btn" id="btnSync" style="display:none" onclick="syncSheet()">
         <span>🔄</span> Sincronizar Sheet
       </button>
+
+      <!-- Separador + Configuración (siempre visible para admin) -->
+      <div style="margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);margin-top:20px;">
+        <button class="city-btn" onclick="openConfigModal()" id="btnConfig" style="display:none">
+          <span>⚙️</span> Configuración
+          <span id="configDot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#F87171;flex-shrink:0" title="Sin conectar"></span>
+        </button>
+      </div>
     </aside>
 
     <!-- CONTENT -->
     <main class="content">
-
-      <!-- Config panel -->
-      <div id="configNotice" style="display:none;margin-bottom:16px;">
-        <div class="config-notice" style="cursor:pointer;justify-content:space-between;align-items:center;" onclick="toggleConfigPanel()">
-          <span>⚙️ &nbsp;<strong>Modo Demo</strong> — Conecta tu Google Sheet para datos reales</span>
-          <span id="configArrow" style="font-size:12px;color:#92400E;">Configurar ▾</span>
-        </div>
-        <div id="configPanel" style="display:none;background:#fff;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 10px 10px;padding:18px 16px;">
-          <p style="font-size:12px;color:#64748B;margin-bottom:14px;">
-            Pega la URL de tu <strong>Google Apps Script</strong> desplegado como web app. 
-            Es la forma más sencilla — sin OAuth, sin APIs. 
-            <a href="README.md" target="_blank" style="color:#1E3A8A;font-weight:600;">Ver guía →</a>
-          </p>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" id="appsScriptUrl" placeholder="https://script.google.com/macros/s/AK.../exec"
-              style="flex:1;padding:9px 13px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;outline:none;font-family:Inter,sans-serif;"
-              onfocus="this.style.borderColor='#1E3A8A'" onblur="this.style.borderColor='#E2E8F0'">
-            <button onclick="saveScriptUrl()" style="padding:9px 18px;background:#1E3A8A;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">
-              Guardar
-            </button>
-          </div>
-          <p style="font-size:11px;color:#94A3B8;margin-top:8px;">La URL se guarda en tu navegador (localStorage).</p>
-        </div>
-      </div>
 
       <!-- Stats -->
       <div class="stats-row" id="statsRow">
@@ -672,6 +656,57 @@
 <!-- HIDDEN FILE INPUT para upload de foto -->
 <input type="file" id="photoFileInline" accept="image/*" style="display:none">
 
+<!-- ══════════════ MODAL CONFIGURACIÓN ══════════════ -->
+<div class="modal-overlay" id="modalConfig">
+  <div class="modal" style="width:460px">
+
+    <!-- Paso 1: contraseña -->
+    <div id="configStep1">
+      <div class="modal-title">⚙️ Configuración</div>
+      <div class="modal-sub">Ingresa la contraseña de configuración para continuar</div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="configPass" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter') verifyConfigPass()">
+      </div>
+      <div id="configPassError" style="color:#DC2626;font-size:12px;margin-top:-6px;margin-bottom:10px;display:none">
+        Contraseña incorrecta
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modalConfig')">Cancelar</button>
+        <button class="btn-save" onclick="verifyConfigPass()">Ingresar</button>
+      </div>
+    </div>
+
+    <!-- Paso 2: configuración real -->
+    <div id="configStep2" style="display:none">
+      <div class="modal-title">⚙️ Configuración del Sistema</div>
+      <div class="modal-sub">Conecta la plataforma con tu Google Sheet</div>
+
+      <div class="form-group">
+        <label>URL del Apps Script</label>
+        <input type="text" id="appsScriptUrl"
+          placeholder="https://script.google.com/macros/s/AK.../exec">
+        <p style="font-size:11px;color:#94A3B8;margin-top:6px;">
+          Extensiones → Apps Script → Implementar → Aplicación web → Copiar URL
+        </p>
+      </div>
+
+      <div id="configStatus" style="display:none;padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:12px;font-weight:500;"></div>
+
+      <div class="modal-footer" style="justify-content:space-between;align-items:center">
+        <button class="btn-cancel" onclick="testScriptConnection()" style="border-color:#2563EB;color:#2563EB">
+          🔗 Probar conexión
+        </button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-cancel" onclick="closeModal('modalConfig')">Cancelar</button>
+          <button class="btn-save" onclick="saveScriptUrl()">Guardar y conectar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════
 // CONFIG — Apps Script URL (sin OAuth, sin APIs)
@@ -741,6 +776,7 @@ function doLogin() {
     document.getElementById('btnSync').style.display = 'flex';
     document.getElementById('btnNewRow').style.display = 'flex';
     document.getElementById('photoSection').style.display = 'block';
+    document.getElementById('btnConfig').style.display = 'flex';
   }
 
   checkConfig();
@@ -764,23 +800,48 @@ function doLogout() {
 }
 
 // ══════════════════════════════════════════════
-// CONFIG CHECK + PANEL
+// CONFIG CHECK
 // ══════════════════════════════════════════════
+const CONFIG_PASS = 'TtAdmin2026'; // contraseña del panel de configuración
+
 function checkConfig() {
   demoMode = !CONFIG.SCRIPT_URL;
-  document.getElementById('configNotice').style.display = 'block';
-  // Pre-llenar campo si hay URL guardada
+  updateConfigDot();
   if (CONFIG.SCRIPT_URL) {
     document.getElementById('appsScriptUrl').value = CONFIG.SCRIPT_URL;
   }
 }
 
-function toggleConfigPanel() {
-  const panel = document.getElementById('configPanel');
-  const arrow = document.getElementById('configArrow');
-  const open = panel.style.display === 'none';
-  panel.style.display = open ? 'block' : 'none';
-  arrow.textContent = open ? 'Cerrar ▴' : 'Configurar ▾';
+function updateConfigDot() {
+  const dot = document.getElementById('configDot');
+  if (!dot) return;
+  dot.style.background = demoMode ? '#F87171' : '#4ADE80';
+  dot.title = demoMode ? 'Sin conectar (Modo Demo)' : 'Conectado al Sheet';
+}
+
+// ─── MODAL CONFIG ───
+function openConfigModal() {
+  // Resetear al paso 1 cada vez
+  document.getElementById('configStep1').style.display = 'block';
+  document.getElementById('configStep2').style.display = 'none';
+  document.getElementById('configPass').value = '';
+  document.getElementById('configPassError').style.display = 'none';
+  document.getElementById('configStatus').style.display = 'none';
+  if (CONFIG.SCRIPT_URL) document.getElementById('appsScriptUrl').value = CONFIG.SCRIPT_URL;
+  openModal('modalConfig');
+}
+
+function verifyConfigPass() {
+  const pass = document.getElementById('configPass').value;
+  if (pass === CONFIG_PASS) {
+    document.getElementById('configStep1').style.display = 'none';
+    document.getElementById('configStep2').style.display = 'block';
+    document.getElementById('configPassError').style.display = 'none';
+  } else {
+    document.getElementById('configPassError').style.display = 'block';
+    document.getElementById('configPass').value = '';
+    document.getElementById('configPass').focus();
+  }
 }
 
 function saveScriptUrl() {
@@ -792,13 +853,77 @@ function saveScriptUrl() {
   localStorage.setItem('ttaudit_script_url', url);
   CONFIG.SCRIPT_URL = url;
   demoMode = false;
-  showToast('URL guardada. Cargando datos reales...', 'success');
-  toggleConfigPanel();
+  updateConfigDot();
+  showToast('Conectado. Cargando datos del Sheet...', 'success');
+  closeModal('modalConfig');
   loadData();
 }
 
+async function testScriptConnection() {
+  const url = document.getElementById('appsScriptUrl').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    showStatus('URL inválida', 'error'); return;
+  }
+  showStatus('Probando conexión...', 'info');
+  try {
+    const data = await jsonpFetch(url, { action: 'getAll' });
+    if (data.error) throw new Error(data.error);
+    showStatus('✅ Conexión exitosa — ' + (data.data ? data.data.length : 0) + ' registros encontrados', 'success');
+  } catch(e) {
+    showStatus('❌ Error: ' + e.message, 'error');
+  }
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('configStatus');
+  el.style.display = 'block';
+  const styles = {
+    success: 'background:#DCFCE7;color:#16A34A;border:1px solid #86EFAC',
+    error:   'background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5',
+    info:    'background:#DBEAFE;color:#2563EB;border:1px solid #93C5FD',
+  };
+  el.style.cssText += ';' + (styles[type] || styles.info);
+  el.textContent = msg;
+}
+
 // ══════════════════════════════════════════════
-// LOAD DATA — vía Apps Script o demo
+// JSONP — resuelve CORS de Apps Script
+// ══════════════════════════════════════════════
+function jsonpFetch(url, params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'ttcb_' + Date.now();
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      const s = document.getElementById(cbName);
+      if (s) s.remove();
+      reject(new Error('Timeout — verifica que el script esté desplegado como "Cualquier persona"'));
+    }, 12000);
+
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      const s = document.getElementById(cbName);
+      if (s) s.remove();
+      resolve(data);
+    };
+
+    const qs = Object.entries({ ...params, callback: cbName })
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+    const script = document.createElement('script');
+    script.id = cbName;
+    script.src = url + '?' + qs;
+    script.onerror = () => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      script.remove();
+      reject(new Error('No se pudo conectar con el script'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// ══════════════════════════════════════════════
+// LOAD DATA — vía JSONP (Apps Script) o demo
 // ══════════════════════════════════════════════
 async function loadData() {
   document.getElementById('tableBody').innerHTML =
@@ -809,13 +934,14 @@ async function loadData() {
     allData = DEMO_DATA.map(r => [...r]);
   } else {
     try {
-      const res = await fetch(`${CONFIG.SCRIPT_URL}?action=getAll`);
-      const json = await res.json();
+      const json = await jsonpFetch(CONFIG.SCRIPT_URL, { action: 'getAll' });
       if (json.error) throw new Error(json.error);
       allData = json.data || [];
     } catch(e) {
       showToast('Error al cargar: ' + e.message, 'error');
       allData = DEMO_DATA.map(r => [...r]);
+      demoMode = true;
+      updateConfigDot();
     }
   }
 
@@ -1084,24 +1210,26 @@ function handleDrop(e) {
 }
 
 // ══════════════════════════════════════════════
-// GOOGLE APPS SCRIPT — BACKEND
-// Todas las operaciones van via fetch al Script
+// GOOGLE APPS SCRIPT — BACKEND (vía JSONP)
 // ══════════════════════════════════════════════
 
-async function scriptCall(params) {
-  const qs = new URLSearchParams(params).toString();
-  const res = await fetch(`${CONFIG.SCRIPT_URL}?${qs}`);
-  const json = await res.json();
+async function appendToSheet(row) {
+  const json = await jsonpFetch(CONFIG.SCRIPT_URL, {
+    action: 'append',
+    data: JSON.stringify(row)
+  });
   if (json.error) throw new Error(json.error);
   return json;
 }
 
-async function appendToSheet(row) {
-  await scriptCall({ action: 'append', data: JSON.stringify(row) });
-}
-
 async function updateSheetRow(idx, row) {
-  await scriptCall({ action: 'update', idx: idx + 2, data: JSON.stringify(row) });
+  const json = await jsonpFetch(CONFIG.SCRIPT_URL, {
+    action: 'update',
+    idx: idx + 2,
+    data: JSON.stringify(row)
+  });
+  if (json.error) throw new Error(json.error);
+  return json;
 }
 
 async function uploadToDrive(file, name) {
