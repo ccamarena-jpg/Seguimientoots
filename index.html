@@ -1424,8 +1424,7 @@ function downloadExcel(scope) {
   const BOM = '﻿';
   const escape = v => {
     const s = String(v ?? '');
-    return s.includes(',') || s.includes('"') || s.includes('
-')
+    return s.includes(',') || s.includes('"') || s.includes('\n')
       ? '"' + s.replace(/"/g, '""') + '"'
       : s;
   };
@@ -1435,8 +1434,7 @@ function downloadExcel(scope) {
     ...rows.map(r => r.map(escape).join(','))
   ];
 
-  const csv  = BOM + lines.join('
-');
+  const csv  = BOM + lines.join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
