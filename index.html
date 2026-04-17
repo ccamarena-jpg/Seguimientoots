@@ -271,7 +271,7 @@ const GOOGLE_DOMAIN    = 'ttaudit.com';
 const GOOGLE_AUTH_URL  = 'https://accounts.google.com/o/oauth2/v2/auth';
 
 function startGoogleLogin() {
-  const redirectUri = window.location.origin + window.location.pathname.replace(/\/+$/, '') + '/';
+  const redirectUri = window.location.origin; // e.g. https://otsbat.vercel.app
   const params = new URLSearchParams({
     client_id:     GOOGLE_CLIENT_ID,
     redirect_uri:  redirectUri,
