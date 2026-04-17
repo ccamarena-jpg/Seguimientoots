@@ -264,6 +264,25 @@
     .topbar-center { display:none; }
   }
 </style>
+<script>
+// Early definitions — must be available before body renders
+const GOOGLE_CLIENT_ID = '328037756755-5h4mvkatjfvq7p0dtsnfc1rg138q7i3i.apps.googleusercontent.com';
+const GOOGLE_DOMAIN    = 'ttaudit.com';
+const GOOGLE_AUTH_URL  = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+function startGoogleLogin() {
+  const redirectUri = window.location.origin + window.location.pathname.replace(/\/+$/, '') + '/';
+  const params = new URLSearchParams({
+    client_id:     GOOGLE_CLIENT_ID,
+    redirect_uri:  redirectUri,
+    response_type: 'token id_token',
+    scope:         'openid email profile',
+    nonce:         Math.random().toString(36).substring(2),
+    prompt:        'select_account'
+  });
+  window.location.href = GOOGLE_AUTH_URL + '?' + params.toString();
+}
+</script>
 </head>
 <body>
 
@@ -579,8 +598,8 @@
 // CONFIG
 // ══════════════════════════════════════════════
 const CONFIG = {
-  SCRIPT_URL: localStorage.getItem('ttaudit_script_url') || '',
-  GOOGLE_CLIENT_ID: '328037756755-5h4mvkatjfvq7p0dtsnfc1rg138q7i3i.apps.googleusercontent.com'
+  SCRIPT_URL: localStorage.getItem('ttaudit_script_url') || ''
+  // GOOGLE_CLIENT_ID defined in <head>
 };
 
 // ══════════════════════════════════════════════
@@ -602,7 +621,7 @@ const USERS = {
 };
 
 // Google OAuth domain
-const GOOGLE_DOMAIN = 'ttaudit.com';
+// GOOGLE_DOMAIN defined in <head>
 
 // ══════════════════════════════════════════════
 // STATE
@@ -636,64 +655,53 @@ const DEMO_DATA = [
 // ══════════════════════════════════════════════
 // GOOGLE OAUTH
 // ══════════════════════════════════════════════
-// ── Google OAuth 2.0 — redirect flow (no popup) ──────────────────
-const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-const REDIRECT_URI    = window.location.origin + window.location.pathname;
-
-function startGoogleLogin() {
-  const params = new URLSearchParams({
-    client_id:     CONFIG.GOOGLE_CLIENT_ID,
-    redirect_uri:  REDIRECT_URI,
-    response_type: 'token id_token',
-    scope:         'openid email profile',
-    nonce:         Math.random().toString(36).substring(2),
-    prompt:        'select_account'
-  });
-  window.location.href = GOOGLE_AUTH_URL + '?' + params.toString();
-}
+// ── Google OAuth 2.0 — redirect flow handled in <head> script ──────
 
 function handleGoogleRedirect() {
-  // Parse hash fragment after OAuth redirect
   const hash = window.location.hash.substring(1);
-  if (!hash) return;
+  if (!hash || !hash.includes('id_token')) return;
 
   const params = {};
   hash.split('&').forEach(part => {
-    const [k, v] = part.split('=');
-    params[decodeURIComponent(k)] = decodeURIComponent(v || '');
+    const eqIdx = part.indexOf('=');
+    if (eqIdx === -1) return;
+    const k = decodeURIComponent(part.substring(0, eqIdx));
+    const v = decodeURIComponent(part.substring(eqIdx + 1));
+    params[k] = v;
   });
 
   if (!params.id_token) return;
 
-  // Clean URL
+  // Clean the URL hash immediately
   history.replaceState(null, '', window.location.pathname);
 
   try {
-    const base64Url = params.id_token.split('.')[1];
-    const base64    = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const padded    = base64 + '='.repeat((4 - base64.length % 4) % 4);
-    const payload   = JSON.parse(atob(padded));
+    const parts = params.id_token.split('.');
+    if (parts.length < 2) throw new Error('Invalid token format');
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const payload = JSON.parse(atob(padded));
 
     const email = (payload.email || '').toLowerCase();
     const name  = payload.name || payload.given_name || email.split('@')[0];
 
     if (!email.endsWith('@' + GOOGLE_DOMAIN)) {
       document.getElementById('loginError').textContent =
-        'Acceso solo para cuentas @' + GOOGLE_DOMAIN;
+        'Solo cuentas @' + GOOGLE_DOMAIN + ' — recibido: ' + email;
       return;
     }
 
     const role        = USERS[email] ? USERS[email].role : 'editor';
     const displayName = USERS[email] ? USERS[email].name : name;
-
     bootApp(email, role, displayName);
+
   } catch(e) {
     document.getElementById('loginError').textContent = 'Error Google: ' + e.message;
     console.error('Google redirect error:', e);
   }
 }
 
-// Check for OAuth redirect on page load
+// Run on page load — catches the OAuth redirect
 window.addEventListener('load', handleGoogleRedirect);
 
 // ══════════════════════════════════════════════
