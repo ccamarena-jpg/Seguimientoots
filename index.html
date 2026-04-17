@@ -63,17 +63,18 @@
   #app { display:none; min-height:100vh; }
 
   /* ══════════ TOPBAR ══════════ */
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:0 28px; height:60px; background:var(--navy); border-bottom:1px solid var(--border2); position:sticky; top:0; z-index:50; }
-  .topbar-logo img { height:32px; object-fit:contain; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:0 16px; height:48px; background:var(--navy); border-bottom:1px solid var(--border2); position:sticky; top:0; z-index:50; }
+  .topbar-logo img { height:24px; object-fit:contain; }
   .topbar-center { font-size:12px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.55); }
   .topbar-right { display:flex; align-items:center; gap:12px; }
   .user-badge { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14); border-radius:30px; padding:5px 14px; }
   .user-dot { width:7px; height:7px; border-radius:50%; background:#4ADE80; flex-shrink:0; }
   .user-name { font-size:12px; color:rgba(255,255,255,0.8); font-weight:500; }
   .role-tag { font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; padding:2px 9px; border-radius:20px; }
-  .role-tag.admin      { background:rgba(251,191,36,0.2); color:#FCD34D; }
-  .role-tag.supervisor { background:rgba(167,243,208,0.2); color:#6EE7B7; }
-  .role-tag.client     { background:rgba(147,197,253,0.2); color:#93C5FD; }
+  .role-tag.admin      { background:rgba(251,191,36,0.2);  color:#FCD34D; }
+  .role-tag.editor     { background:rgba(167,243,208,0.2);  color:#6EE7B7; }
+  .role-tag.supervisor { background:rgba(251,146,60,0.2);   color:#FDBA74; }
+  .role-tag.client     { background:rgba(147,197,253,0.2);  color:#93C5FD; }
   .btn-logout { background:transparent; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:6px 14px; color:rgba(255,255,255,0.6); font-size:12px; cursor:pointer; transition:all 0.18s; font-family:'Inter',sans-serif; }
   .btn-logout:hover { border-color:#F87171; color:#F87171; }
 
@@ -81,8 +82,8 @@
   .main-layout { display:flex; min-height:calc(100vh - 60px); }
 
   /* ══════════ SIDEBAR ══════════ */
-  .sidebar { width:220px; flex-shrink:0; background:var(--bg2); border-right:1px solid var(--border2); padding:20px 12px; display:flex; flex-direction:column; }
-  .sidebar-section-label { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:0 10px; margin-bottom:6px; margin-top:18px; }
+  .sidebar { width:175px; flex-shrink:0; background:var(--bg2); border-right:1px solid var(--border2); padding:14px 8px; display:flex; flex-direction:column; }
+  .sidebar-section-label { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:0 8px; margin-bottom:4px; margin-top:14px; }
   .sidebar-section-label:first-child { margin-top:0; }
 
   /* Search box in sidebar */
@@ -92,48 +93,48 @@
   .city-search-input::placeholder { color:rgba(255,255,255,0.4); }
   .city-search-input:focus { border-color:rgba(255,255,255,0.5); }
 
-  .city-btn { display:flex; align-items:center; gap:9px; width:100%; padding:10px; border:none; border-radius:9px; background:transparent; color:rgba(255,255,255,0.65); font-family:'Inter',sans-serif; font-size:13px; font-weight:500; cursor:pointer; text-align:left; transition:all 0.16s; margin-bottom:2px; }
+  .city-btn { display:flex; align-items:center; gap:7px; width:100%; padding:7px 8px; border:none; border-radius:7px; background:transparent; color:rgba(255,255,255,0.65); font-family:'Inter',sans-serif; font-size:12px; font-weight:500; cursor:pointer; text-align:left; transition:all 0.16s; margin-bottom:1px; }
   .city-btn:hover { background:rgba(255,255,255,0.09); color:#fff; }
   .city-btn.active { background:rgba(255,255,255,0.14); color:#fff; font-weight:600; }
   .city-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
   .city-count { margin-left:auto; font-size:11px; font-weight:600; background:rgba(255,255,255,0.12); border-radius:12px; padding:1px 8px; color:rgba(255,255,255,0.7); }
 
   /* ══════════ CONTENT ══════════ */
-  .content { flex:1; padding:24px 28px; overflow-x:auto; background:var(--surface2); }
+  .content { flex:1; padding:14px 16px; overflow-x:auto; background:var(--surface2); }
 
   /* ══════════ STATS ══════════ */
-  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
-  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.06); animation:fadeUp 0.35s ease both; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; box-shadow:0 1px 4px rgba(0,0,0,0.06); animation:fadeUp 0.35s ease both; }
   @keyframes fadeUp { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
-  .stat-label { font-size:11px; color:var(--text2); font-weight:600; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:6px; }
-  .stat-value { font-size:30px; font-weight:700; line-height:1; }
+  .stat-label { font-size:10px; color:var(--text2); font-weight:600; letter-spacing:0.4px; text-transform:uppercase; margin-bottom:3px; }
+  .stat-value { font-size:22px; font-weight:700; line-height:1; }
   .stat-value.c-total { color:var(--blue); }
   .stat-value.c-green { color:var(--success); }
   .stat-value.c-red   { color:var(--danger); }
   .stat-value.c-blue  { color:var(--info); }
 
   /* ══════════ TABLE HEADER ══════════ */
-  .table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-  .table-title { font-size:16px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:10px; }
+  .table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .table-title { font-size:13px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:8px; }
   .city-name-badge { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--blue); background:var(--blue-lt); border-radius:20px; padding:3px 12px; }
   .actions-row { display:flex; gap:8px; align-items:center; }
 
   /* Global search */
   .global-search { position:relative; }
-  .global-search input { padding:8px 12px 8px 34px; border-radius:9px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:13px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.18s; width:200px; }
+  .global-search input { padding:6px 10px 6px 30px; border-radius:7px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:12px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.18s; width:170px; }
   .global-search input:focus { border-color:var(--blue); }
   .global-search::before { content:'🔍'; position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:13px; }
 
-  .btn-primary { display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:9px; border:none; background:var(--blue); color:#fff; font-family:'Inter',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.16s; }
+  .btn-primary { display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:8px; border:none; background:var(--blue); color:#fff; font-family:'Inter',sans-serif; font-size:11px; font-weight:600; cursor:pointer; transition:all 0.16s; }
   .btn-primary:hover { background:var(--blue-h); box-shadow:0 4px 16px rgba(30,58,138,0.25); }
-  .btn-secondary { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:9px; border:1.5px solid var(--border); background:var(--surface); color:var(--text2); font-size:13px; cursor:pointer; transition:all 0.16s; font-family:'Inter',sans-serif; }
+  .btn-secondary { display:flex; align-items:center; gap:5px; padding:6px 10px; border-radius:8px; border:1.5px solid var(--border); background:var(--surface); color:var(--text2); font-size:11px; cursor:pointer; transition:all 0.16s; font-family:'Inter',sans-serif; }
   .btn-secondary:hover { border-color:var(--blue); color:var(--blue); }
 
   /* ══════════ TABLE ══════════ */
   .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
-  table { width:100%; border-collapse:collapse; min-width:1000px; }
+  table { width:100%; border-collapse:collapse; min-width:860px; table-layout:fixed; }
   thead tr { background:var(--surface2); }
-  thead th { padding:12px 14px; text-align:left; font-size:11px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--text2); border-bottom:1.5px solid var(--border); white-space:nowrap; cursor:pointer; user-select:none; transition:background 0.15s; }
+  thead th { padding:7px 8px; text-align:left; font-size:10px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--text2); border-bottom:1.5px solid var(--border); white-space:nowrap; cursor:pointer; user-select:none; transition:background 0.15s; overflow:hidden; text-overflow:ellipsis; }
   thead th:hover { background:#E8ECF3; color:var(--blue); }
   thead th .sort-icon { margin-left:4px; opacity:0.4; font-size:10px; }
   thead th.sort-asc .sort-icon { opacity:1; }
@@ -141,11 +142,26 @@
   tbody tr { border-bottom:1px solid var(--border); transition:background 0.12s; }
   tbody tr:last-child { border-bottom:none; }
   tbody tr:hover { background:#F8FAFF; }
-  tbody td { padding:12px 14px; font-size:13px; vertical-align:middle; color:var(--text); }
+  tbody td { padding:6px 8px; font-size:11px; vertical-align:middle; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:0; }
 
-  /* ══════════ STATUS BADGES ══════════ */
-  .status-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
-  .status-badge::before { content:''; width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  /* Column widths — fixed layout for 13" screen */
+  #tableHead th:nth-child(1)  { width:72px;  } /* Cadena */
+  #tableHead th:nth-child(2)  { width:130px; } /* PoS */
+  #tableHead th:nth-child(3)  { width:130px; } /* Dirección */
+  #tableHead th:nth-child(4)  { width:88px;  } /* Fecha */
+  #tableHead th:nth-child(5)  { width:72px;  } /* Horario */
+  #tableHead th:nth-child(6)  { width:76px;  } /* Ciudad */
+  #tableHead th:nth-child(7)  { width:88px;  } /* Responsable */
+  #tableHead th:nth-child(8)  { width:130px; } /* OT */
+  #tableHead th:nth-child(9)  { width:120px; } /* Status */
+  #tableHead th:nth-child(10) { width:110px; } /* Observaciones */
+  #tableHead th:nth-child(11) { width:72px;  } /* Fotos */
+
+  /* Allow OT and Obs to wrap since they're long text */
+  tbody td:nth-child(8),
+  tbody td:nth-child(10) { white-space:normal; word-break:break-word; }
+  .status-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:600; white-space:nowrap; }
+  .status-badge::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
   .status-realizado   { background:var(--success-bg); color:var(--success); }
   .status-realizado::before { background:var(--success); }
   .status-programado  { background:var(--info-bg); color:var(--info); }
@@ -332,6 +348,8 @@
           <div class="global-search">
             <input type="text" id="globalSearch" placeholder="Buscar cliente / PDV..." oninput="renderTable()">
           </div>
+          <button class="btn-secondary" onclick="downloadExcel('ciudad')">📥 Excel ciudad</button>
+          <button class="btn-secondary" onclick="downloadExcel('todas')">📥 Excel total</button>
           <button class="btn-secondary" onclick="loadData()">🔄 Actualizar</button>
           <button class="btn-primary" id="btnNewRow" style="display:none" onclick="openNewModal()">+ Nueva fila</button>
         </div>
@@ -560,13 +578,21 @@ const CONFIG = {
 // USUARIOS (contraseña para cliente BAT sin @ttaudit.com)
 // ══════════════════════════════════════════════
 const USERS = {
-  'ccamarena@ttaudit.com': { pass: 'Audit2026', role: 'admin',      name: 'C. Camarena' },
-  'jmarinos@ttaudit.com':  { pass: 'audit2026', role: 'supervisor', name: 'J. Marinos'  },
-  'bat@ttaudit.com':       { pass: '2026',       role: 'client',    name: 'Cliente BAT' }
+  // Admin
+  'ccamarena@ttaudit.com':      { pass: 'Audit2026', role: 'admin',      name: 'C. Camarena'      },
+  // Editores — entran con Google (@ttaudit.com), pueden todo menos Configuracion
+  'mcarhuallanqui@ttaudit.com': { pass: null,        role: 'editor',     name: 'M. Carhuallanqui' },
+  'abaltazar@ttaudit.com':      { pass: null,        role: 'editor',     name: 'A. Baltazar'      },
+  'ycontreras@ttaudit.com':     { pass: null,        role: 'editor',     name: 'Y. Contreras'     },
+  'demi@ttaudit.com':           { pass: null,        role: 'editor',     name: 'Demi'             },
+  // Supervisor — edita fecha, status, fotos, responsable, turno, obs; no puede agregar filas
+  'jmarinos@ttaudit.com':       { pass: 'audit2026', role: 'supervisor', name: 'J. Marinos'       },
+  // Clientes externos — solo ven + editan obs, entran con contrasena
+  'renzo@ttaudit.com':          { pass: 'Bat2026',   role: 'client',     name: 'Renzo (BAT)'      },
+  'demi_ext':                   { pass: 'Bat2026',   role: 'client',     name: 'Demi (BAT)'       },
 };
 
-// Google users: any @ttaudit.com that signs in via Google is treated as supervisor
-// unless explicitly in USERS as admin
+// Google OAuth domain
 const GOOGLE_DOMAIN = 'ttaudit.com';
 
 // ══════════════════════════════════════════════
@@ -602,7 +628,6 @@ const DEMO_DATA = [
 // GOOGLE OAUTH
 // ══════════════════════════════════════════════
 function handleGoogleLogin(response) {
-  // Decode the JWT credential
   try {
     const payload = JSON.parse(atob(response.credential.split('.')[1]));
     const email   = (payload.email || '').toLowerCase();
@@ -613,8 +638,8 @@ function handleGoogleLogin(response) {
       return;
     }
 
-    // Determine role: if in USERS table use that role, else supervisor
-    const role = USERS[email] ? USERS[email].role : 'supervisor';
+    // Role from USERS table; unknown @ttaudit.com users get 'editor' by default
+    const role        = USERS[email] ? USERS[email].role : 'editor';
     const displayName = USERS[email] ? USERS[email].name : name;
 
     bootApp(email, role, displayName);
@@ -628,14 +653,29 @@ function handleGoogleLogin(response) {
 // LOGIN manual (contraseña)
 // ══════════════════════════════════════════════
 function doLogin() {
-  const email = document.getElementById('emailInput').value.trim().toLowerCase();
-  const pass  = document.getElementById('passInput').value;
-  const err   = document.getElementById('loginError');
+  const raw  = document.getElementById('emailInput').value.trim().toLowerCase();
+  const pass = document.getElementById('passInput').value;
+  const err  = document.getElementById('loginError');
 
-  if (!USERS[email]) { err.textContent = 'Usuario no encontrado.'; return; }
-  if (USERS[email].pass !== pass) { err.textContent = 'Contraseña incorrecta.'; return; }
+  // Try direct email key first, then search all users by email field
+  let key  = null;
+  let user = null;
+
+  if (USERS[raw]) {
+    key = raw; user = USERS[raw];
+  } else {
+    // Allow 'renzo' or 'demi' as shorthand
+    for (const [k, u] of Object.entries(USERS)) {
+      if (k === raw || k.startsWith(raw + '@') || k.startsWith(raw + '_')) {
+        key = k; user = u; break;
+      }
+    }
+  }
+
+  if (!user) { err.textContent = 'Usuario no encontrado.'; return; }
+  if (!user.pass || user.pass !== pass) { err.textContent = 'Contrasena incorrecta.'; return; }
   err.textContent = '';
-  bootApp(email, USERS[email].role, USERS[email].name);
+  bootApp(key, user.role, user.name);
 }
 
 document.getElementById('passInput').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
@@ -650,22 +690,33 @@ function bootApp(email, role, name) {
 
   document.getElementById('topUserName').textContent = name;
   const tag = document.getElementById('topRoleTag');
-  const roleLabels = { admin:'Admin', supervisor:'Supervisor', client:'Cliente' };
+  const roleLabels = { admin:'Admin', editor:'Editor', supervisor:'Supervisor', client:'Cliente' };
   tag.textContent = roleLabels[role] || role;
   tag.className = 'role-tag ' + role;
 
-  if (role === 'admin') {
+  // ── Permisos por rol ──────────────────────────────────────────
+  // admin:      todo, incluye Configuracion
+  // editor:     todo menos Configuracion (si puede nuevas filas y fotos)
+  // supervisor: editar campos inline + fotos, NO nuevas filas, NO Config
+  // client:     solo ver + editar obs
+
+  const isAdmin  = role === 'admin';
+  const isEditor = role === 'editor';
+  const isSup    = role === 'supervisor';
+
+  if (isAdmin || isEditor || isSup) {
     document.getElementById('adminSection').style.display = 'block';
-    document.getElementById('btnImport').style.display = 'flex';
     document.getElementById('btnSync').style.display = 'flex';
-    document.getElementById('btnNewRow').style.display = 'flex';
-    document.getElementById('photoSection').style.display = 'block';
-    document.getElementById('btnConfig').style.display = 'flex';
   }
-  if (role === 'supervisor') {
-    document.getElementById('adminSection').style.display = 'block';
-    document.getElementById('btnSync').style.display = 'flex';
+  if (isAdmin || isEditor) {
+    document.getElementById('btnImport').style.display = 'flex';
+    document.getElementById('btnNewRow').style.display = 'flex';
+  }
+  if (isAdmin || isEditor || isSup) {
     document.getElementById('photoSection').style.display = 'block';
+  }
+  if (isAdmin) {
+    document.getElementById('btnConfig').style.display = 'flex';
   }
 
   checkConfig();
@@ -910,60 +961,64 @@ function renderTable() {
     };
     const [cls, label] = statusMap[status] || ['status-confirmar', status||'–'];
 
-    const isAdmin      = currentRole === 'admin';
-    const isSupervisor = currentRole === 'supervisor';
-    const canPhoto     = isAdmin || isSupervisor;
+    // Role flags
+    const isAdmin  = currentRole === 'admin';
+    const isEditor = currentRole === 'editor';
+    const isSup    = currentRole === 'supervisor';
+    const isClient = currentRole === 'client';
 
-    // Photo cell — gallery button or upload
+    const canEditAll      = isAdmin || isEditor;
+    const canEditInline   = isSup;
+    const canPhoto        = isAdmin || isEditor || isSup;
+    const canChangeStatus = isAdmin || isEditor || isSup;
+
+    // Photo cell
     const photos = [foto1,foto2,foto3,foto4].filter(Boolean);
     let fotoCell;
     if (photos.length > 0) {
-      fotoCell = `<button class="photo-gallery-btn" onclick="openGallery(${globalIdx},'${(pos||'').replace(/'/g,"\\'")}')">
-        📷 Ver fotos <span class="photo-count-badge">${photos.length}</span>
-      </button>`;
+      fotoCell = `<button class="photo-gallery-btn" onclick="openGallery(${globalIdx},'${(pos||'').replace(/'/g,"\'")}')">📷 <span class="photo-count-badge">${photos.length}</span></button>`;
     } else if (canPhoto) {
-      fotoCell = `<button class="photo-upload-btn" onclick="triggerPhotoUpload(${globalIdx})">+ Subir foto</button>`;
+      fotoCell = `<button class="photo-upload-btn" onclick="triggerPhotoUpload(${globalIdx})">+ Foto</button>`;
     } else {
-      fotoCell = `<span class="obs-empty">Sin foto</span>`;
+      fotoCell = `<span class="obs-empty">–</span>`;
     }
 
-    // Fecha inline edit for supervisor — FIX: use onchange + blur
-    const fechaCell = isSupervisor
-      ? `<input type="date" value="${(fecha||'').substring(0,10)}" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;outline:none;" onchange="quickEdit(${globalIdx},3,this.value);this.blur();">`
+    // Inline editable fields (supervisor only)
+    const fechaCell = canEditInline
+      ? `<input type="date" value="${(fecha||'').substring(0,10)}" style="font-size:11px;border:1px solid var(--border);border-radius:5px;padding:2px 5px;outline:none;max-width:100px;" onchange="quickEdit(${globalIdx},3,this.value);this.blur();">`
       : formatDate(fecha);
-    const horarioCell = isSupervisor
-      ? `<select style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:2px 4px;" onchange="quickEdit(${globalIdx},4,this.value)">
+    const horarioCell = canEditInline
+      ? `<select style="font-size:10px;border:1px solid var(--border);border-radius:5px;padding:2px 3px;" onchange="quickEdit(${globalIdx},4,this.value)">
            ${['MAÑANA','TARDE','TODO EL DÍA'].map(h=>`<option${h===horario?' selected':''}>${h}</option>`).join('')}
          </select>`
       : `<span style="font-size:11px;color:var(--text2)">${horario||'–'}</span>`;
-    const ciudadCell = isSupervisor
-      ? `<select style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:2px 4px;" onchange="quickEdit(${globalIdx},5,this.value)">
+    const ciudadCell = canEditInline
+      ? `<select style="font-size:11px;border:1px solid var(--border);border-radius:5px;padding:2px 3px;" onchange="quickEdit(${globalIdx},5,this.value)">
            ${['Pucallpa','Iquitos','Tarapoto'].map(c=>`<option${c===ciudad?' selected':''}>${c}</option>`).join('')}
          </select>`
-      : `<span style="font-size:12px;font-weight:500">${ciudad||'–'}</span>`;
-    const respCell = isSupervisor
-      ? `<input type="text" value="${resp||''}" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;width:130px;outline:none;" onblur="quickEdit(${globalIdx},6,this.value)">`
-      : `<span style="font-size:12px;color:var(--text2)">${resp||'–'}</span>`;
+      : `<span style="font-size:11px;font-weight:500">${ciudad||'–'}</span>`;
+    const respCell = canEditInline
+      ? `<input type="text" value="${resp||''}" style="font-size:11px;border:1px solid var(--border);border-radius:5px;padding:2px 5px;width:90px;outline:none;" onblur="quickEdit(${globalIdx},6,this.value)">`
+      : `<span style="font-size:11px;color:var(--text2)">${resp||'–'}</span>`;
 
-    const obsCell = isAdmin
-      ? `<span class="obs-text">${obs||'<span class="obs-empty">–</span>'}</span>`
-      : `<button class="photo-upload-btn" onclick="openObsModal(${globalIdx},'${(pos||'').replace(/'/g,"\\'")}')">
-          ${obs ? '✏️ '+(obs.substring(0,20)+(obs.length>20?'…':'')) : '+ Agregar'}
-         </button>`;
+    // Obs: all roles can edit obs
+    const obsCell = `<button class="photo-upload-btn" onclick="openObsModal(${globalIdx},'${(pos||'').replace(/'/g,"\'")}')">
+      ${obs ? '✏️ '+(obs.substring(0,18)+(obs.length>18?'…':'')) : '+ Obs'}
+    </button>`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><span style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-lt);padding:2px 8px;border-radius:12px;white-space:nowrap">${cadena||'–'}</span></td>
-      <td><strong>${pos||'–'}</strong></td>
-      <td style="font-size:12px;color:var(--text2)">${dir||'–'}</td>
+      <td><span style="font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:1px 6px;border-radius:10px;white-space:nowrap">${cadena||'–'}</span></td>
+      <td><strong style="font-size:11px">${pos||'–'}</strong></td>
+      <td style="color:var(--text2)">${dir||'–'}</td>
       <td style="white-space:nowrap">${fechaCell}</td>
       <td>${horarioCell}</td>
       <td>${ciudadCell}</td>
       <td>${respCell}</td>
-      <td style="font-size:12px">${ot||'–'}</td>
+      <td>${ot||'–'}</td>
       <td>
         <span class="status-badge ${cls}">${label}</span>
-        ${(isAdmin||isSupervisor) ? `<select class="status-select" onchange="changeStatus(${globalIdx},this.value)">
+        ${canChangeStatus ? `<select class="status-select" onchange="changeStatus(${globalIdx},this.value)">
           <option value="">Cambiar...</option>
           <option value="VISITA PROGRAMADA">Programado</option>
           <option value="POR CONFIRMAR VISITA">Por Confirmar</option>
@@ -974,7 +1029,7 @@ function renderTable() {
       <td>${obsCell}</td>
       <td>${fotoCell}</td>
     `;
-    if (isAdmin) {
+    if (canEditAll) {
       tr.style.cursor = 'default';
       tr.ondblclick = () => openEditModal(globalIdx);
     }
@@ -1294,6 +1349,53 @@ async function syncSheet() {
   showToast('Sincronizando con Google Sheets...','info');
   await loadData();
   showToast('✅ Datos actualizados.','success');
+}
+
+
+// ══════════════════════════════════════════════
+// DOWNLOAD EXCEL
+// ══════════════════════════════════════════════
+function downloadExcel(scope) {
+  // Determine rows to export
+  const rows = scope === 'ciudad' && activeCity !== 'Todas'
+    ? allData.filter(r => r[5] === activeCity)
+    : allData;
+
+  if (!rows.length) { showToast('No hay datos para exportar.', 'error'); return; }
+
+  const headers = ['Cadena','PoS','Dirección','Fecha','Horario','Ciudad',
+                   'Responsable','OT','Status','Observaciones',
+                   'Foto1','Foto2','Foto3','Foto4'];
+
+  // Build CSV with BOM for Excel UTF-8
+  const BOM = '﻿';
+  const escape = v => {
+    const s = String(v ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('
+')
+      ? '"' + s.replace(/"/g, '""') + '"'
+      : s;
+  };
+
+  const lines = [
+    headers.map(escape).join(','),
+    ...rows.map(r => r.map(escape).join(','))
+  ];
+
+  const csv  = BOM + lines.join('
+');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const city = scope === 'ciudad' && activeCity !== 'Todas' ? '_' + activeCity : '_TODAS';
+  const date = new Date().toISOString().slice(0,10);
+  a.href     = url;
+  a.download = `GPS_Instalaciones${city}_${date}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✅ Descargando ' + rows.length + ' registros...', 'success');
 }
 
 // ══════════════════════════════════════════════
