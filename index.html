@@ -1388,7 +1388,8 @@ async function loadData() {
 // CITY FILTER
 // ══════════════════════════════════════════════
 function buildCityFilter() {
-  const cities = ['Todas', ...new Set(allData.map(r => r[8]).filter(Boolean))].sort((a,b) => a==='Todas'?-1:a.localeCompare(b));
+  const cities = [...new Set(allData.map(r => r[8]).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+  cities.push('Todas'); // Todas siempre al final
   const list = document.getElementById('cityList');
   list.innerHTML = '';
 
