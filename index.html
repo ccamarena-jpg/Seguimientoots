@@ -1722,27 +1722,73 @@ async function updateSheetRow(idx, row) {
 }
 
 async function uploadToDrive(file, name) {
-  // Convertir a base64 y enviar al script
+  // Comprimir antes de subir (máx 1024px, calidad 0.75 → ~100-200KB)
+  const compressed = await compressImage(file, 1024, 0.75);
+
+  // Convertir a base64 (sin prefijo)
   const b64 = await new Promise((res, rej) => {
     const reader = new FileReader();
     reader.onload = () => res(reader.result.split(',')[1]);
     reader.onerror = rej;
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(compressed);
   });
 
-  const response = await fetch(CONFIG.SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      action: 'uploadPhoto',
-      filename: `${name}_${Date.now()}.${file.name.split('.').pop()}`,
-      mimeType: file.type,
-      data: b64
-    })
+  const filename = name.replace(/[^a-zA-Z0-9_-]/g,'_') + '_' + Date.now() + '.jpg';
+  const mimeType = 'image/jpeg';
+
+  // POST via fetch con mode no-cors no devuelve respuesta útil.
+  // Usamos el método: enviar via fetch normal al script desplegado como web app.
+  // Apps Script con "Acceso: Cualquier persona" acepta POST sin auth.
+  return new Promise((resolve, reject) => {
+    const cbName = 'ttphoto_' + Date.now();
+    const timeoutId = setTimeout(() => {
+      delete window[cbName];
+      reject(new Error('Timeout subiendo foto. Verifica permisos del script.'));
+    }, 30000); // 30s para fotos
+
+    window[cbName] = function(data) {
+      clearTimeout(timeoutId);
+      delete window[cbName];
+      if (data.error) reject(new Error(data.error));
+      else resolve(data.url);
+    };
+
+    // Enviar via fetch con callback JSONP en query string
+    // El body POST lleva la foto, el callback va en la URL
+    fetch(CONFIG.SCRIPT_URL + '?callback=' + cbName, {
+      method: 'POST',
+      mode: 'no-cors',  // evita CORS pero no leeremos la respuesta directamente
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'action=uploadPhoto&filename=' + encodeURIComponent(filename) +
+            '&mimeType=' + encodeURIComponent(mimeType) +
+            '&data=' + encodeURIComponent(b64)
+    }).catch(() => {
+      // no-cors siempre lanza error de lectura — es esperado
+      // la respuesta llega vía el callback JSONP inyectado por el script
+    });
   });
-  const json = await response.json();
-  if (json.error) throw new Error(json.error);
-  return json.url;
+}
+
+// Comprime imagen a maxWidth px con calidad q (0-1)
+function compressImage(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objUrl);
+      const scale  = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('Error al comprimir imagen')),
+        'image/jpeg', quality
+      );
+    };
+    img.onerror = () => reject(new Error('No se pudo leer la imagen'));
+    img.src = objUrl;
+  });
 }
 
 async function syncSheet() {
