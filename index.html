@@ -286,7 +286,7 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     max-width:100%;
   }
-  table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:1200px; }
+  table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:1500px; }
   thead tr { background:var(--surface2); }
   thead th {
     padding:8px 8px; text-align:left;
@@ -305,19 +305,21 @@
              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
   /* Anchos fijos por columna para caber en pantalla */
-  table th:nth-child(1),  table td:nth-child(1)  { width:130px; }  /* PoS */
-  table th:nth-child(2),  table td:nth-child(2)  { width:130px; }  /* Dirección */
-  table th:nth-child(3),  table td:nth-child(3)  { width:80px;  }  /* Fecha */
-  table th:nth-child(4),  table td:nth-child(4)  { width:68px;  }  /* Horario */
-  table th:nth-child(5),  table td:nth-child(5)  { width:80px;  }  /* Ciudad */
-  table th:nth-child(6),  table td:nth-child(6)  { width:95px;  }  /* Jefe Terr. */
-  table th:nth-child(7),  table td:nth-child(7)  { width:70px;  }  /* Cód. Distr. */
-  table th:nth-child(8),  table td:nth-child(8)  { width:68px;  }  /* Cód. TTA */
-  table th:nth-child(9),  table td:nth-child(9)  { width:100px; }  /* Responsable */
-  table th:nth-child(10), table td:nth-child(10) { width:145px; }  /* OT */
-  table th:nth-child(11), table td:nth-child(11) { width:130px; }  /* Status */
-  table th:nth-child(12), table td:nth-child(12) { width:100px; }  /* Obs */
-  table th:nth-child(13), table td:nth-child(13) { width:78px;  }  /* Foto */
+  /* Nuevo orden: Jefe, Cadena, CodDistr, CodTTA, NombreCliente, Dir, Fecha, Horario, Ciudad, Resp, OT, Status, Obs, Fotos */
+  table th:nth-child(1),  table td:nth-child(1)  { width:100px; }  /* Jefe Terr. */
+  table th:nth-child(2),  table td:nth-child(2)  { width:80px;  }  /* Cadena */
+  table th:nth-child(3),  table td:nth-child(3)  { width:75px;  }  /* Cód. Distr. */
+  table th:nth-child(4),  table td:nth-child(4)  { width:68px;  }  /* Cód. TTA */
+  table th:nth-child(5),  table td:nth-child(5)  { width:180px; overflow:visible; white-space:normal; }  /* Nombre Cliente — sin truncar */
+  table th:nth-child(6),  table td:nth-child(6)  { width:180px; overflow:visible; white-space:normal; }  /* Dirección — sin truncar */
+  table th:nth-child(7),  table td:nth-child(7)  { width:78px;  }  /* Fecha */
+  table th:nth-child(8),  table td:nth-child(8)  { width:65px;  }  /* Horario */
+  table th:nth-child(9),  table td:nth-child(9)  { width:78px;  }  /* Ciudad */
+  table th:nth-child(10), table td:nth-child(10) { width:100px; }  /* Responsable */
+  table th:nth-child(11), table td:nth-child(11) { width:200px; overflow:visible; white-space:normal; }  /* OT — sin truncar */
+  table th:nth-child(12), table td:nth-child(12) { width:130px; }  /* Status */
+  table th:nth-child(13), table td:nth-child(13) { width:140px; overflow:visible; white-space:normal; }  /* Obs — sin truncar */
+  table th:nth-child(14), table td:nth-child(14) { width:100px; }  /* Fotos */
 
   /* ══════════ STATUS BADGES ══════════ */
   .status-badge {
@@ -745,13 +747,7 @@
         </div>
       </div>
 
-      <!-- Row 2: Cobertura + Efectividad por ciudad -->
-      <div class="dash-card dash-grid-full" style="margin-bottom:16px">
-        <div class="dash-card-title"><span>📈</span> Cobertura y Efectividad por Ciudad</div>
-        <div class="chart-container" style="height:200px">
-          <canvas id="chartCobertura"></canvas>
-        </div>
-      </div>
+
 
 
     </div>
@@ -806,6 +802,23 @@
           <button class="btn-secondary" onclick="loadData()">🔄 Actualizar</button>
           <button class="btn-primary" id="btnNewRow" style="display:none" onclick="openNewModal()">+ Nueva fila</button>
         </div>
+      </div>
+
+      <!-- Barra de búsqueda -->
+      <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px">
+        <div style="position:relative;flex:1;max-width:380px">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:15px;pointer-events:none">🔍</span>
+          <input type="text" id="searchInput" placeholder="Buscar por nombre de tienda..."
+            oninput="filterBySearch(this.value)"
+            style="width:100%;padding:9px 12px 9px 38px;border:1.5px solid var(--border);
+                   border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;
+                   outline:none;color:var(--text);background:var(--surface);">
+        </div>
+        <button onclick="filterBySearch('');document.getElementById('searchInput').value=''"
+          style="padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;
+                 background:transparent;color:var(--text2);font-size:12px;cursor:pointer;
+                 font-family:'Inter',sans-serif;white-space:nowrap">✕ Limpiar</button>
+        <span id="searchCount" style="font-size:12px;color:var(--text2)"></span>
       </div>
 
       <!-- Table -->
@@ -1404,7 +1417,14 @@ function updateCityButtons() {
 // ══════════════════════════════════════════════
 function renderTable() {
   document.getElementById('activeCityLabel').textContent = activeCity;
-  const filtered = activeCity === 'Todas' ? allData : allData.filter(r => r[8] === activeCity);
+  const cityFiltered = activeCity === 'Todas' ? allData : allData.filter(r => r[8] === activeCity);
+  const filtered = !searchTerm
+    ? cityFiltered
+    : cityFiltered.filter(r => (r[4]||'').toLowerCase().includes(searchTerm));
+
+  // Actualizar contador de búsqueda
+  const countEl = document.getElementById('searchCount');
+  if (countEl) countEl.textContent = searchTerm ? `${filtered.length} resultado(s) para "${searchTerm}"` : '';
 
   // Stats
   document.getElementById('stTotal').textContent  = filtered.length;
@@ -1477,7 +1497,7 @@ function renderTable() {
       : `<span style="font-size:12px;color:var(--text2)">${resp||'–'}</span>`;
 
     const obsCell = isAdmin
-      ? `<span class="obs-text">${obs || '<span class="obs-empty">–</span>'}</span>`
+      ? `<span class="obs-text" style="white-space:normal;word-break:break-word">${obs || '<span class="obs-empty">–</span>'}</span>`
       : `<button class="photo-upload-btn" onclick="openObsModal(${globalIdx},'${(pos||'').replace(/'/g,"\\'")}')">
           ${obs ? '✏️ ' + (obs.substring(0,20) + (obs.length>20?'…':'')) : '+ Agregar'}
          </button>`;
@@ -1488,13 +1508,13 @@ function renderTable() {
       <td style="font-size:12px;text-align:center">${cadena||'–'}</td>
       <td style="font-size:12px;text-align:center">${codDistr||'–'}</td>
       <td style="font-size:12px;text-align:center">${codTTA||'–'}</td>
-      <td><strong>${pos||'–'}</strong></td>
-      <td style="font-size:12px;color:var(--text2)">${dir||'–'}</td>
+      <td style="white-space:normal;word-break:break-word"><strong>${pos||'–'}</strong></td>
+      <td style="font-size:12px;color:var(--text2);white-space:normal;word-break:break-word">${dir||'–'}</td>
       <td style="white-space:nowrap">${fechaCell}</td>
       <td>${horarioCell}</td>
       <td>${ciudadCell}</td>
       <td>${respCell}</td>
-      <td style="font-size:12px">${ot||'–'}</td>
+      <td style="font-size:12px;white-space:normal;word-break:break-word">${ot||'–'}</td>
       <td><span class="status-badge ${cls}">${label}</span>
           ${canChangeStatus ? `<select class="status-select" onchange="changeStatus(${globalIdx},this.value)">
             <option value="">Cambiar...</option>
@@ -1618,6 +1638,16 @@ async function changeStatus(idx, newStatus) {
   if (!demoMode) await updateSheetRow(idx, allData[idx]);
   renderTable();
   showToast('Status actualizado.', 'success');
+}
+
+// ══════════════════════════════════════════════
+// BÚSQUEDA POR NOMBRE DE TIENDA
+// ══════════════════════════════════════════════
+let searchTerm = '';
+
+function filterBySearch(term) {
+  searchTerm = term.toLowerCase().trim();
+  renderTable();
 }
 
 // ══════════════════════════════════════════════
@@ -1879,7 +1909,6 @@ function getDashData() {
 // ══════════════════════════════════════════════
 let chartPieInst     = null;
 let chartStatusInst  = null;
-let chartCobertInst  = null;
 
 function renderDashboard() {
   const data = getDashData();
@@ -1887,8 +1916,8 @@ function renderDashboard() {
   const total   = data.length;
   const done    = data.filter(r=>r[11]==='REALIZADO').length;
   const noEf    = data.filter(r=>r[11]==='NO EFECTIVO').length;
-  const prog    = data.filter(r=>r[10]==='VISITA PROGRAMADA').length;
-  const confirm = data.filter(r=>r[10]==='POR CONFIRMAR VISITA').length;
+  const prog    = data.filter(r=>r[11]==='VISITA PROGRAMADA').length;
+  const confirm = data.filter(r=>r[11]==='POR CONFIRMAR VISITA').length;
   const efectPct= (done+noEf) > 0 ? Math.round(done/(done+noEf)*100) : 0;
 
   document.getElementById('dkTotal').textContent   = total;
@@ -1900,7 +1929,6 @@ function renderDashboard() {
 
   renderPieChart(data);
   renderStatusChart(done, noEf, prog, confirm);
-  renderCoberturaChart(data);
 }
 
 // Pie chart — OTs por ciudad
@@ -1942,15 +1970,16 @@ function renderPieChart(data) {
   });
 }
 
-// Bar chart — status
+// Bar chart — resumen por status (los 4 estados reales)
 function renderStatusChart(done, noEf, prog, confirm) {
   const ctx = document.getElementById('chartStatus').getContext('2d');
   if (chartStatusInst) chartStatusInst.destroy();
   chartStatusInst = new Chart(ctx, {
     type:'bar',
     data:{
-      labels:['Realizado','No Efectivo','Programado','Por Confirmar'],
+      labels:['REALIZADO','NO EFECTIVO','VISITA PROGRAMADA','POR CONFIRMAR VISITA'],
       datasets:[{
+        label: 'OTs',
         data:[done, noEf, prog, confirm],
         backgroundColor:['#16A34A','#DC2626','#2563EB','#D97706'],
         borderRadius:6, borderSkipped:false
@@ -1958,49 +1987,19 @@ function renderStatusChart(done, noEf, prog, confirm) {
     },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label: ctx => ' ' + ctx.raw + ' OTs'}}
+      },
       scales:{
-        y:{ beginAtZero:true, ticks:{stepSize:1}, grid:{color:'rgba(0,0,0,0.05)'} },
-        x:{ grid:{display:false}, ticks:{font:{size:11}} }
+        y:{ beginAtZero:true, ticks:{stepSize:1, precision:0}, grid:{color:'rgba(0,0,0,0.05)'} },
+        x:{ grid:{display:false}, ticks:{font:{size:10}, maxRotation:15, minRotation:0} }
       }
     }
   });
 }
 
 // Bar chart — cobertura y efectividad por ciudad
-function renderCoberturaChart(data) {
-  const ciudades = [...new Set(data.map(r=>r[8]).filter(Boolean))].sort();
-  const coberturas  = ciudades.map(c => {
-    const sub = data.filter(r=>r[4]===c);
-    return sub.length > 0 ? Math.round(sub.filter(r=>r[10]==='REALIZADO').length/sub.length*100) : 0;
-  });
-  const efectividades = ciudades.map(c => {
-    const sub = data.filter(r=>r[4]===c);
-    const valid = sub.filter(r=>r[10]==='REALIZADO'||r[10]==='NO EFECTIVO');
-    return valid.length > 0 ? Math.round(sub.filter(r=>r[10]==='REALIZADO').length/valid.length*100) : 0;
-  });
 
-  const ctx = document.getElementById('chartCobertura').getContext('2d');
-  if (chartCobertInst) chartCobertInst.destroy();
-  chartCobertInst = new Chart(ctx, {
-    type:'bar',
-    data:{
-      labels: ciudades,
-      datasets:[
-        { label:'Cobertura %',    data:coberturas,   backgroundColor:'rgba(37,99,235,0.7)',  borderRadius:4 },
-        { label:'Efectividad %',  data:efectividades,backgroundColor:'rgba(22,163,74,0.7)',  borderRadius:4 }
-      ]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'top', labels:{font:{size:11}} } },
-      scales:{
-        y:{ beginAtZero:true, max:100, ticks:{callback:v=>v+'%'}, grid:{color:'rgba(0,0,0,0.05)'} },
-        x:{ grid:{display:false} }
-      }
-    }
-  });
-}
 
 // Ranking de responsables
 // ══════════════════════════════════════════════
