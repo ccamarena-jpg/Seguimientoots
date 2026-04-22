@@ -765,18 +765,18 @@
       </div>
 
       <div class="sidebar-section-label" id="adminSection" style="display:none">Administración</div>
-      <button class="city-btn" id="btnImport" style="display:none" onclick="openImportModal()">
+      <button class="city-btn" id="btnImport" style="display:none" onclick="requireAdminCode(openImportModal)">
         <span>📥</span> Importar Excel
       </button>
-      <button class="city-btn" id="btnSync" style="display:none" onclick="syncSheet()">
+      <button class="city-btn" id="btnSync" style="display:none" onclick="requireAdminCode(syncSheet)">
         <span>🔄</span> Sincronizar Sheet
       </button>
 
-      <!-- Separador + Configuración (siempre visible para admin) -->
+      <!-- Configuración solo admins -->
       <div style="margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);margin-top:20px;">
-        <button class="city-btn" onclick="openConfigModal()" id="btnConfig" style="display:none">
+        <button class="city-btn" onclick="requireAdminCode(openConfigModal)" id="btnConfig" style="display:none">
           <span>⚙️</span> Configuración
-          <span id="configDot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#F87171;flex-shrink:0" title="Sin conectar"></span>
+          <span id="configDot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#4ADE80;flex-shrink:0" title="Conectado"></span>
         </button>
       </div>
     </aside>
@@ -999,52 +999,46 @@
 <input type="file" id="photoFileInline" accept="image/*" style="display:none">
 
 <!-- ══════════════ MODAL CONFIGURACIÓN ══════════════ -->
+<!-- ══════════ MODAL CÓDIGO ADMIN ══════════ -->
+<div class="modal-overlay" id="modalAdminCode">
+  <div class="modal" style="width:380px">
+    <div class="modal-title">🔐 Acceso Administrativo</div>
+    <div class="modal-sub">Ingresa el código para continuar</div>
+    <div class="form-group">
+      <label>Código</label>
+      <input type="password" id="adminCodeInput" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter') verifyAdminCode()">
+    </div>
+    <div id="adminCodeError" style="color:#DC2626;font-size:12px;margin-top:-6px;margin-bottom:10px;display:none">
+      Código incorrecto
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalAdminCode')">Cancelar</button>
+      <button class="btn-save" onclick="verifyAdminCode()">Ingresar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL CONFIGURACIÓN ══════════ -->
 <div class="modal-overlay" id="modalConfig">
   <div class="modal" style="width:460px">
+    <div class="modal-title">⚙️ Configuración del Sistema</div>
+    <div class="modal-sub">Estado de la conexión con Google Sheets</div>
 
-    <!-- Paso 1: contraseña -->
-    <div id="configStep1">
-      <div class="modal-title">⚙️ Configuración</div>
-      <div class="modal-sub">Ingresa la contraseña de configuración para continuar</div>
-      <div class="form-group">
-        <label>Contraseña</label>
-        <input type="password" id="configPass" placeholder="••••••••"
-          onkeydown="if(event.key==='Enter') verifyConfigPass()">
-      </div>
-      <div id="configPassError" style="color:#DC2626;font-size:12px;margin-top:-6px;margin-bottom:10px;display:none">
-        Contraseña incorrecta
-      </div>
-      <div class="modal-footer">
-        <button class="btn-cancel" onclick="closeModal('modalConfig')">Cancelar</button>
-        <button class="btn-save" onclick="verifyConfigPass()">Ingresar</button>
+    <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:#16A34A;margin-bottom:6px">✅ Conectado al Sheet</div>
+      <div style="font-size:11px;color:#15803D;word-break:break-all;font-family:monospace">
+        https://script.google.com/macros/library/d/...freL/7
       </div>
     </div>
 
-    <!-- Paso 2: configuración real -->
-    <div id="configStep2" style="display:none">
-      <div class="modal-title">⚙️ Configuración del Sistema</div>
-      <div class="modal-sub">Conecta la plataforma con tu Google Sheet</div>
+    <div id="configStatus" style="display:none;padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:12px;font-weight:500;"></div>
 
-      <div class="form-group">
-        <label>URL del Apps Script</label>
-        <input type="text" id="appsScriptUrl"
-          placeholder="https://script.google.com/macros/s/AK.../exec">
-        <p style="font-size:11px;color:#94A3B8;margin-top:6px;">
-          Extensiones → Apps Script → Implementar → Aplicación web → Copiar URL
-        </p>
-      </div>
-
-      <div id="configStatus" style="display:none;padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:12px;font-weight:500;"></div>
-
-      <div class="modal-footer" style="justify-content:space-between;align-items:center">
-        <button class="btn-cancel" onclick="testScriptConnection()" style="border-color:#2563EB;color:#2563EB">
-          🔗 Probar conexión
-        </button>
-        <div style="display:flex;gap:8px">
-          <button class="btn-cancel" onclick="closeModal('modalConfig')">Cancelar</button>
-          <button class="btn-save" onclick="saveScriptUrl()">Guardar y conectar</button>
-        </div>
-      </div>
+    <div class="modal-footer" style="justify-content:space-between;align-items:center">
+      <button class="btn-cancel" onclick="testScriptConnection()" style="border-color:#2563EB;color:#2563EB">
+        🔗 Probar conexión
+      </button>
+      <button class="btn-cancel" onclick="closeModal('modalConfig')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1055,7 +1049,7 @@
 // CONFIG — Apps Script URL (sin OAuth, sin APIs)
 // ══════════════════════════════════════════════
 const CONFIG = {
-  SCRIPT_URL: localStorage.getItem('ttaudit_script_url') || ''
+  SCRIPT_URL: 'https://script.google.com/macros/library/d/1TVfd65HmIwJNMnzJ1HIUXnt_8V1zzttSJyfgHP6NQpH-Fxhrg8nnfreL/7'
 };
 
 // ══════════════════════════════════════════════
@@ -1095,7 +1089,7 @@ let currentRole = null;
 let allData     = [];
 let activeCity  = 'Todas';
 let selectedFile= null;
-let demoMode    = true; // se desactiva si las APIs están configuradas
+let demoMode    = false; // URL hardcodeada — siempre conectado
 
 // ══════════════════════════════════════════════
 // DEMO DATA
@@ -1232,14 +1226,9 @@ function doLogout() {
 // ══════════════════════════════════════════════
 // CONFIG CHECK
 // ══════════════════════════════════════════════
-const CONFIG_PASS = 'TtAdmin2026'; // contraseña del panel de configuración
-
 function checkConfig() {
-  demoMode = !CONFIG.SCRIPT_URL;
+  demoMode = false; // URL hardcodeada, siempre activa
   updateConfigDot();
-  if (CONFIG.SCRIPT_URL) {
-    document.getElementById('appsScriptUrl').value = CONFIG.SCRIPT_URL;
-  }
 }
 
 function updateConfigDot() {
@@ -1250,55 +1239,51 @@ function updateConfigDot() {
 }
 
 // ─── MODAL CONFIG ───
-function openConfigModal() {
-  // Resetear al paso 1 cada vez
-  document.getElementById('configStep1').style.display = 'block';
-  document.getElementById('configStep2').style.display = 'none';
-  document.getElementById('configPass').value = '';
-  document.getElementById('configPassError').style.display = 'none';
-  document.getElementById('configStatus').style.display = 'none';
-  if (CONFIG.SCRIPT_URL) document.getElementById('appsScriptUrl').value = CONFIG.SCRIPT_URL;
-  openModal('modalConfig');
+const CONFIG_PASS = 'TtAdmin2026'; // código de acceso administrativo
+
+// ── Solicitar código antes de ejecutar acción admin ──────────
+let _pendingAdminFn = null;
+
+function requireAdminCode(fn) {
+  _pendingAdminFn = fn;
+  document.getElementById('adminCodeInput').value = '';
+  document.getElementById('adminCodeError').style.display = 'none';
+  openModal('modalAdminCode');
+  setTimeout(() => document.getElementById('adminCodeInput').focus(), 100);
 }
 
-function verifyConfigPass() {
-  const pass = document.getElementById('configPass').value;
-  if (pass === CONFIG_PASS) {
-    document.getElementById('configStep1').style.display = 'none';
-    document.getElementById('configStep2').style.display = 'block';
-    document.getElementById('configPassError').style.display = 'none';
+function verifyAdminCode() {
+  const code = document.getElementById('adminCodeInput').value;
+  if (code === CONFIG_PASS) {
+    closeModal('modalAdminCode');
+    document.getElementById('adminCodeInput').value = '';
+    if (typeof _pendingAdminFn === 'function') {
+      _pendingAdminFn();
+      _pendingAdminFn = null;
+    }
   } else {
-    document.getElementById('configPassError').style.display = 'block';
-    document.getElementById('configPass').value = '';
-    document.getElementById('configPass').focus();
+    document.getElementById('adminCodeError').style.display = 'block';
+    document.getElementById('adminCodeInput').value = '';
+    document.getElementById('adminCodeInput').focus();
   }
 }
 
-function saveScriptUrl() {
-  const url = document.getElementById('appsScriptUrl').value.trim();
-  if (!url.startsWith('https://script.google.com')) {
-    showToast('URL inválida. Debe ser de script.google.com', 'error');
-    return;
-  }
-  localStorage.setItem('ttaudit_script_url', url);
-  CONFIG.SCRIPT_URL = url;
-  demoMode = false;
-  updateConfigDot();
-  showToast('Conectado. Cargando datos del Sheet...', 'success');
-  closeModal('modalConfig');
-  loadData();
+function openConfigModal() {
+  openModal('modalConfig');
+  // Auto-probar conexión al abrir
+  testScriptConnection();
 }
+
+function saveScriptUrl() { /* URL hardcodeada — no necesaria */ }
+
+function verifyConfigPass() { verifyAdminCode(); } // legacy alias
 
 async function testScriptConnection() {
-  const url = document.getElementById('appsScriptUrl').value.trim();
-  if (!url.startsWith('https://script.google.com')) {
-    showStatus('URL inválida', 'error'); return;
-  }
   showStatus('Probando conexión...', 'info');
   try {
-    const data = await jsonpFetch(url, { action: 'getAll' });
+    const data = await jsonpFetch(CONFIG.SCRIPT_URL, { action: 'getAll' });
     if (data.error) throw new Error(data.error);
-    showStatus('✅ Conexión exitosa — ' + (data.data ? data.data.length : 0) + ' registros encontrados', 'success');
+    showStatus('✅ Conectado — ' + (data.data ? data.data.length : 0) + ' registros en el Sheet', 'success');
   } catch(e) {
     showStatus('❌ Error: ' + e.message, 'error');
   }
