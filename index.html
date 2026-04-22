@@ -336,6 +336,19 @@
   .status-noefectivo::before { background:var(--danger); }
 
   /* ══════════ PHOTO & OBS ══════════ */
+  .foto-cell { display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+  .foto-thumb {
+    display:inline-block; width:36px; height:36px; border-radius:6px;
+    overflow:hidden; border:1.5px solid var(--border); flex-shrink:0;
+    cursor:pointer; transition:transform 0.15s, box-shadow 0.15s;
+  }
+  .foto-thumb:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+  .foto-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .foto-add-btn {
+    width:30px; height:30px; padding:0; border-radius:6px;
+    font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center;
+  }
+
   .photo-link {
     color:var(--blue); font-size:12px; font-weight:500;
     text-decoration:none; display:inline-flex; align-items:center; gap:4px;
@@ -812,7 +825,7 @@
               <th>OT</th>
               <th>Status</th>
               <th>Obs.</th>
-              <th>Foto</th>
+              <th>Fotos</th>
             </tr>
           </thead>
           <tbody id="tableBody">
@@ -1061,14 +1074,14 @@ let demoMode    = true; // se desactiva si las APIs están configuradas
 // DEMO DATA
 // ══════════════════════════════════════════════
 const DEMO_DATA = [
-  //  PoS                  Dirección                                 Fecha         Horario   Ciudad     Jefe Terr.    Cód.Distr  Cód.TTA   Responsable   OT                              Status                  Obs                               Foto
-  ['JORGE GAVE CHAMORRO','Av. 9 de octubre con jr. Manco Capac', '2026-04-16','TARDE',  'Pucallpa','Carlos Vega','D-001',   'TTA-101','Juan Quispe','INSTALACIÓN DE DISPENSER',      'REALIZADO',            '',                               ''],
-  ['Los Andes',          'JR CORONEL PORTILLO 557',              '2026-04-16','TARDE',  'Pucallpa','Carlos Vega','D-001',   'TTA-102','',           'INSTALACIÓN DE DISPENSER',      'NO EFECTIVO',          'EL DISP NO DEBE SER INSTALADO',  ''],
-  ['Panda Party',        'Jirón Jimenez Pimentel 910',           '2026-04-17','MAÑANA', 'Tarapoto','Ana Flores', 'D-002',   'TTA-201','Luis Paredes','INSTALACIÓN DISPENSER DE MESA','POR CONFIRMAR VISITA', '',                               ''],
-  ['Star Market',        'Jr. Progreso 1270',                    '2026-04-17','MAÑANA', 'Tarapoto','Ana Flores', 'D-002',   'TTA-202','Luis Paredes','INSTALACIÓN DISPENSER DE MESA','VISITA PROGRAMADA',    '',                               ''],
-  ['Inversiones Fantasia','Jr. Loreto 248',                      '2026-04-18','TARDE',  'Iquitos', 'Mario Ríos', 'D-003',   'TTA-301','Pedro Ruiz', 'INSTALACIÓN PLACA LS ECLIPSE', 'VISITA PROGRAMADA',    '',                               ''],
-  ['Minimarket El Sol',  'Av. Grau 1100',                        '2026-04-18','MAÑANA', 'Pucallpa','Carlos Vega','D-001',   'TTA-103','Juan Quispe','INSTALACIÓN VUSE',              'REALIZADO',            'OK sin incidentes',              ''],
-  ['Bodega Central',     'Jr. Ucayali 450',                      '2026-04-19','TARDE',  'Iquitos', 'Mario Ríos', 'D-003',   'TTA-302','Pedro Ruiz', 'INSTALACIÓN DISPENSER TAMBO',  'POR CONFIRMAR VISITA', 'Pendiente confirmar hora',       ''],
+  // [0]PoS                [1]Dirección                              [2]Fecha      [3]Horario [4]Ciudad  [5]Jefe       [6]CodDistr [7]CodTTA  [8]Resp.        [9]OT                          [10]Status             [11]Obs                      [12]F1 [13]F2 [14]F3 [15]F4
+  ['JORGE GAVE CHAMORRO','Av. 9 de octubre con jr. Manco Capac','2026-04-16','TARDE',  'Pucallpa','Carlos Vega','D-001','TTA-101','Juan Quispe', 'INSTALACIÓN DE DISPENSER',     'REALIZADO',            '',                         '','','',''],
+  ['Los Andes',           'JR CORONEL PORTILLO 557',             '2026-04-16','TARDE',  'Pucallpa','Carlos Vega','D-001','TTA-102','',           'INSTALACIÓN DE DISPENSER',     'NO EFECTIVO',          'El disp no debe instalarse','','','',''],
+  ['Panda Party',         'Jirón Jimenez Pimentel 910',          '2026-04-17','MAÑANA', 'Tarapoto','Ana Flores', 'D-002','TTA-201','Luis Paredes','INSTALACIÓN DISPENSER DE MESA','POR CONFIRMAR VISITA', '',                         '','','',''],
+  ['Star Market',         'Jr. Progreso 1270',                   '2026-04-17','MAÑANA', 'Tarapoto','Ana Flores', 'D-002','TTA-202','Luis Paredes','INSTALACIÓN DISPENSER DE MESA','VISITA PROGRAMADA',    '',                         '','','',''],
+  ['Inversiones Fantasia','Jr. Loreto 248',                      '2026-04-18','TARDE',  'Iquitos', 'Mario Ríos', 'D-003','TTA-301','Pedro Ruiz',  'INSTALACIÓN PLACA LS ECLIPSE', 'VISITA PROGRAMADA',    '',                         '','','',''],
+  ['Minimarket El Sol',   'Av. Grau 1100',                       '2026-04-18','MAÑANA', 'Pucallpa','Carlos Vega','D-001','TTA-103','Juan Quispe', 'INSTALACIÓN VUSE',             'REALIZADO',            'OK sin incidentes',        '','','',''],
+  ['Bodega Central',      'Jr. Ucayali 450',                     '2026-04-19','TARDE',  'Iquitos', 'Mario Ríos', 'D-003','TTA-302','Pedro Ruiz',  'INSTALACIÓN DISPENSER TAMBO',  'POR CONFIRMAR VISITA', 'Pendiente confirmar hora', '','','',''],
 ];
 
 // ══════════════════════════════════════════════
@@ -1394,7 +1407,7 @@ function renderTable() {
   tbody.innerHTML = '';
   filtered.forEach((row, idx) => {
     const globalIdx = allData.indexOf(row);
-    const [pos, dir, fecha, horario, ciudad, jefe, codDistr, codTTA, resp, ot, status, obs, foto] = row;
+    const [pos, dir, fecha, horario, ciudad, jefe, codDistr, codTTA, resp, ot, status, obs, foto1, foto2, foto3, foto4] = row;
 
     const statusMap = {
       'REALIZADO':          ['status-realizado',  'Realizado'],
@@ -1410,11 +1423,26 @@ function renderTable() {
     const canChangeStatus = isAdmin || isSupervisor;
     const canPhoto = isAdmin || isSupervisor;
 
-    const fotoCell = foto
-      ? `<a class="photo-link" href="${foto}" target="_blank">📷 Ver foto</a>`
-      : (canPhoto
-          ? `<button class="photo-upload-btn" onclick="triggerPhotoUpload(${globalIdx})">+ Subir foto</button>`
-          : `<span class="obs-empty">Sin foto</span>`);
+    // 4 slots de foto (índices 12-15 del array)
+    const fotosArr = [foto1, foto2, foto3, foto4];
+    const fotosValidas = fotosArr.filter(Boolean);
+    const nextSlot = fotosArr.findIndex(f => !f); // primer slot vacío
+
+    // Generar URL de thumbnail desde URL de Drive
+    const thumbUrl = (url) => {
+      if (!url) return '';
+      const m = url.match(/\/d\/([^/]+)/);
+      return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w80` : url;
+    };
+
+    const fotoCell = `<div class="foto-cell">
+      ${fotosValidas.map((f,i) => `<a class="foto-thumb" href="${f}" target="_blank" title="Foto ${i+1}">
+        <img src="${thumbUrl(f)}" onerror="this.style.display='none';this.nextSibling.style.display='inline'" alt="Foto">
+        <span style="display:none;font-size:16px">📷</span>
+      </a>`).join('')}
+      ${canPhoto && nextSlot !== -1 ? `<button class="photo-upload-btn foto-add-btn" onclick="triggerPhotoUpload(${globalIdx},${nextSlot})">+</button>` : ''}
+      ${!canPhoto && fotosValidas.length === 0 ? '<span class="obs-empty">–</span>' : ''}
+    </div>`;
 
     // Supervisor puede editar fechas/horario/ciudad/responsable inline
     const fechaCell = isSupervisor
@@ -1507,6 +1535,8 @@ function openEditModal(idx) {
   document.getElementById('fOt').value      = row[9]||'';
   document.getElementById('fStatus').value  = row[10]||'VISITA PROGRAMADA';
   document.getElementById('fObs').value     = row[11]||'';
+  // Mostrar primera foto si existe
+  if (row[12]) document.getElementById('photoPreview').textContent = '✅ Foto 1 guardada: ' + row[12].substring(0,40) + '…';
   openModal('modalNew');
 }
 
@@ -1532,7 +1562,7 @@ async function saveRow() {
     document.getElementById('fOt').value.trim(),
     document.getElementById('fStatus').value,
     document.getElementById('fObs').value.trim(),
-    ''
+    '', '', '', ''  // Foto 1, 2, 3, 4
   ];
 
   if (!newRow[0]) { showToast('El campo PoS es requerido.', 'error'); return; }
@@ -1541,8 +1571,8 @@ async function saveRow() {
   if (selectedFile && !demoMode) {
     showToast('Subiendo foto a Drive...', 'info');
     try {
-      const photoUrl = await uploadToDrive(selectedFile, newRow[0]);
-      newRow[12] = photoUrl;
+      const photoUrl = await uploadToDrive(selectedFile, newRow[0] + '_foto1');
+      newRow[12] = photoUrl; // Foto 1
     } catch(e) {
       showToast('Error subiendo foto: ' + e.message, 'error');
     }
@@ -1607,23 +1637,26 @@ async function saveObs() {
 // ══════════════════════════════════════════════
 // PHOTO UPLOAD
 // ══════════════════════════════════════════════
-function triggerPhotoUpload(idx) {
+function triggerPhotoUpload(idx, slot) {
+  // slot: 0-3 → corresponde a array[12..15]
+  const slotIdx = typeof slot === 'number' ? slot : 0;
+  const arrayIdx = 12 + slotIdx; // foto1=12, foto2=13, foto3=14, foto4=15
   const input = document.getElementById('photoFileInline');
   input.onchange = async function() {
     if (!this.files[0]) return;
-    showToast('Subiendo foto...', 'info');
+    showToast('Subiendo foto ' + (slotIdx+1) + '...', 'info');
     try {
       let url;
       if (demoMode) {
-        await new Promise(r => setTimeout(r, 1000));
-        url = 'https://drive.google.com/file/d/DEMO_FILE_ID/view';
+        await new Promise(r => setTimeout(r, 800));
+        url = 'https://drive.google.com/file/d/DEMO_' + Date.now() + '/view';
       } else {
-        url = await uploadToDrive(this.files[0], allData[idx][0]);
+        url = await uploadToDrive(this.files[0], allData[idx][0] + '_foto' + (slotIdx+1));
       }
-      allData[idx][9] = url;
+      allData[idx][arrayIdx] = url;
       if (!demoMode) await updateSheetRow(idx, allData[idx]);
       renderTable();
-      showToast('Foto subida y enlace guardado.', 'success');
+      showToast('Foto ' + (slotIdx+1) + ' guardada.', 'success');
     } catch(e) {
       showToast('Error: ' + e.message, 'error');
     }
@@ -1664,7 +1697,7 @@ async function appendToSheet(row) {
 async function updateSheetRow(idx, row) {
   const json = await jsonpFetch(CONFIG.SCRIPT_URL, {
     action: 'update',
-    idx: idx + 2,
+    idx: idx + 3,  // fila 1=título, 2=encabezados, 3+=datos → idx 0 → fila 3
     data: JSON.stringify(row)
   });
   if (json.error) throw new Error(json.error);
