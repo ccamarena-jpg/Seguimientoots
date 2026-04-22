@@ -813,14 +813,15 @@
         <table>
           <thead>
             <tr>
-              <th>PoS</th>
+              <th>Jefe Terr.</th>
+              <th>Cadena</th>
+              <th>Cód. Distr.</th>
+              <th>Cód. TTA</th>
+              <th>Nombre Cliente</th>
               <th>Dirección</th>
               <th>Fecha</th>
               <th>Horario</th>
               <th>Ciudad</th>
-              <th>Jefe Terr.</th>
-              <th>Cód. Distr.</th>
-              <th>Cód. TTA</th>
               <th>Responsable</th>
               <th>OT</th>
               <th>Status</th>
@@ -843,13 +844,37 @@
   <div class="modal">
     <div class="modal-title" id="modalTitle">Nueva Instalación</div>
     <div class="modal-sub">Completa los datos del punto de venta</div>
-
     <input type="hidden" id="editRowIndex" value="">
 
+    <!-- Fila 1: Jefe + Cadena -->
     <div class="form-row">
       <div class="form-group">
-        <label>PoS / Punto de Venta</label>
-        <input type="text" id="fPos" placeholder="Nombre del PDV">
+        <label>Jefe Territorial</label>
+        <input type="text" id="fJefe" placeholder="Nombre del jefe territorial">
+      </div>
+      <div class="form-group">
+        <label>Cadena</label>
+        <input type="text" id="fCadena" placeholder="Tambo, Oxxo, Repsol, Primax...">
+      </div>
+    </div>
+
+    <!-- Fila 2: Cód. Distribuidor + Cód. TTA -->
+    <div class="form-row">
+      <div class="form-group">
+        <label>Código Distribuidor</label>
+        <input type="text" id="fCodDistr" placeholder="D-001">
+      </div>
+      <div class="form-group">
+        <label>Código TTA</label>
+        <input type="text" id="fCodTTA" placeholder="TTA-101">
+      </div>
+    </div>
+
+    <!-- Fila 3: Nombre Cliente + Ciudad -->
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nombre Cliente / PoS</label>
+        <input type="text" id="fPos" placeholder="Nombre del punto de venta">
       </div>
       <div class="form-group">
         <label>Ciudad</label>
@@ -861,11 +886,13 @@
       </div>
     </div>
 
+    <!-- Dirección -->
     <div class="form-group">
       <label>Dirección</label>
       <input type="text" id="fDir" placeholder="Jr. / Av. ...">
     </div>
 
+    <!-- Fila 4: Fecha + Horario -->
     <div class="form-row">
       <div class="form-group">
         <label>Fecha de Visita</label>
@@ -881,33 +908,19 @@
       </div>
     </div>
 
+    <!-- Fila 5: Responsable + OT -->
     <div class="form-row">
-      <div class="form-group">
-        <label>Jefe Territorial</label>
-        <input type="text" id="fJefe" placeholder="Nombre del jefe territorial">
-      </div>
-      <div class="form-group">
-        <label>Código Distribuidor</label>
-        <input type="text" id="fCodDistr" placeholder="D-001">
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label>Código TTA</label>
-        <input type="text" id="fCodTTA" placeholder="TTA-101">
-      </div>
       <div class="form-group">
         <label>Responsable Asignado</label>
         <input type="text" id="fResp" placeholder="Nombre del técnico">
       </div>
+      <div class="form-group">
+        <label>OT / Tipo de Trabajo</label>
+        <input type="text" id="fOt" placeholder="INSTALACIÓN DE DISPENSER">
+      </div>
     </div>
 
-    <div class="form-group">
-      <label>OT / Tipo de Trabajo</label>
-      <input type="text" id="fOt" placeholder="INSTALACIÓN DE DISPENSER">
-    </div>
-
+    <!-- Status -->
     <div class="form-group">
       <label>Status</label>
       <select id="fStatus">
@@ -918,15 +931,16 @@
       </select>
     </div>
 
+    <!-- Observaciones -->
     <div class="form-group">
       <label>Observaciones</label>
       <textarea id="fObs" rows="2" placeholder="Notas adicionales..."></textarea>
     </div>
 
-    <!-- Subida de foto (solo admin) -->
+    <!-- Subida de foto (solo admin/supervisor) -->
     <div id="photoSection" style="display:none">
       <div class="form-group">
-        <label>Foto de Ejecución</label>
+        <label>Foto de Ejecución (Foto 1)</label>
         <div class="upload-zone" id="uploadZone"
           onclick="document.getElementById('photoFile').click()"
           ondragover="event.preventDefault();this.classList.add('dragover')"
@@ -937,7 +951,7 @@
           <div class="upload-sub">JPG, PNG, WEBP — máx. 10MB</div>
         </div>
         <input type="file" id="photoFile" accept="image/*" style="display:none" onchange="handleFileSelect(this)">
-        <div id="photoPreview" style="margin-top:10px;font-size:12px;color:var(--muted);"></div>
+        <div id="photoPreview" style="margin-top:10px;font-size:12px;color:var(--text2);"></div>
       </div>
     </div>
 
@@ -1074,14 +1088,14 @@ let demoMode    = true; // se desactiva si las APIs están configuradas
 // DEMO DATA
 // ══════════════════════════════════════════════
 const DEMO_DATA = [
-  // [0]PoS                [1]Dirección                              [2]Fecha      [3]Horario [4]Ciudad  [5]Jefe       [6]CodDistr [7]CodTTA  [8]Resp.        [9]OT                          [10]Status             [11]Obs                      [12]F1 [13]F2 [14]F3 [15]F4
-  ['JORGE GAVE CHAMORRO','Av. 9 de octubre con jr. Manco Capac','2026-04-16','TARDE',  'Pucallpa','Carlos Vega','D-001','TTA-101','Juan Quispe', 'INSTALACIÓN DE DISPENSER',     'REALIZADO',            '',                         '','','',''],
-  ['Los Andes',           'JR CORONEL PORTILLO 557',             '2026-04-16','TARDE',  'Pucallpa','Carlos Vega','D-001','TTA-102','',           'INSTALACIÓN DE DISPENSER',     'NO EFECTIVO',          'El disp no debe instalarse','','','',''],
-  ['Panda Party',         'Jirón Jimenez Pimentel 910',          '2026-04-17','MAÑANA', 'Tarapoto','Ana Flores', 'D-002','TTA-201','Luis Paredes','INSTALACIÓN DISPENSER DE MESA','POR CONFIRMAR VISITA', '',                         '','','',''],
-  ['Star Market',         'Jr. Progreso 1270',                   '2026-04-17','MAÑANA', 'Tarapoto','Ana Flores', 'D-002','TTA-202','Luis Paredes','INSTALACIÓN DISPENSER DE MESA','VISITA PROGRAMADA',    '',                         '','','',''],
-  ['Inversiones Fantasia','Jr. Loreto 248',                      '2026-04-18','TARDE',  'Iquitos', 'Mario Ríos', 'D-003','TTA-301','Pedro Ruiz',  'INSTALACIÓN PLACA LS ECLIPSE', 'VISITA PROGRAMADA',    '',                         '','','',''],
-  ['Minimarket El Sol',   'Av. Grau 1100',                       '2026-04-18','MAÑANA', 'Pucallpa','Carlos Vega','D-001','TTA-103','Juan Quispe', 'INSTALACIÓN VUSE',             'REALIZADO',            'OK sin incidentes',        '','','',''],
-  ['Bodega Central',      'Jr. Ucayali 450',                     '2026-04-19','TARDE',  'Iquitos', 'Mario Ríos', 'D-003','TTA-302','Pedro Ruiz',  'INSTALACIÓN DISPENSER TAMBO',  'POR CONFIRMAR VISITA', 'Pendiente confirmar hora', '','','',''],
+  // [0]Jefe        [1]Cadena  [2]CodDistr [3]CodTTA [4]NombreCliente          [5]Dirección                            [6]Fecha      [7]Horario [8]Ciudad  [9]Resp.        [10]OT                           [11]Status             [12]Obs                      [13-16]Fotos
+  ['Carlos Vega','Tambo',  'D-001','TTA-101','JORGE GAVE CHAMORRO',  'Av. 9 de octubre con jr. Manco Capac','2026-04-16','TARDE',  'Pucallpa','Juan Quispe', 'INSTALACIÓN DE DISPENSER',      'REALIZADO',           '',                         '','','',''],
+  ['Carlos Vega','Tambo',  'D-001','TTA-102','Los Andes',             'Jr. Coronel Portillo 557',             '2026-04-16','TARDE',  'Pucallpa','',           'INSTALACIÓN DE DISPENSER',      'NO EFECTIVO',         'El disp no debe instalarse','','','',''],
+  ['Ana Flores', 'Oxxo',   'D-002','TTA-201','Panda Party',           'Jirón Jimenez Pimentel 910',           '2026-04-17','MAÑANA', 'Tarapoto','Luis Paredes','INSTALACIÓN DISPENSER DE MESA','POR CONFIRMAR VISITA','',                         '','','',''],
+  ['Ana Flores', 'Oxxo',   'D-002','TTA-202','Star Market',           'Jr. Progreso 1270',                    '2026-04-17','MAÑANA', 'Tarapoto','Luis Paredes','INSTALACIÓN DISPENSER DE MESA','VISITA PROGRAMADA',   '',                         '','','',''],
+  ['Mario Ríos', 'Repsol', 'D-003','TTA-301','Inversiones Fantasia',  'Jr. Loreto 248',                       '2026-04-18','TARDE',  'Iquitos', 'Pedro Ruiz',  'INSTALACIÓN PLACA LS ECLIPSE', 'VISITA PROGRAMADA',   '',                         '','','',''],
+  ['Carlos Vega','Primax', 'D-001','TTA-103','Minimarket El Sol',     'Av. Grau 1100',                        '2026-04-18','MAÑANA', 'Pucallpa','Juan Quispe', 'INSTALACIÓN VUSE',             'REALIZADO',           'OK sin incidentes',        '','','',''],
+  ['Mario Ríos', 'Repsol', 'D-003','TTA-302','Bodega Central',        'Jr. Ucayali 450',                      '2026-04-19','TARDE',  'Iquitos', 'Pedro Ruiz',  'INSTALACIÓN DISPENSER TAMBO',  'POR CONFIRMAR VISITA','Pendiente confirmar hora', '','','',''],
 ];
 
 // ══════════════════════════════════════════════
@@ -1361,12 +1375,12 @@ async function loadData() {
 // CITY FILTER
 // ══════════════════════════════════════════════
 function buildCityFilter() {
-  const cities = ['Todas', ...new Set(allData.map(r => r[4]).filter(Boolean))].sort((a,b) => a==='Todas'?-1:a.localeCompare(b));
+  const cities = ['Todas', ...new Set(allData.map(r => r[8]).filter(Boolean))].sort((a,b) => a==='Todas'?-1:a.localeCompare(b));
   const list = document.getElementById('cityList');
   list.innerHTML = '';
 
   cities.forEach(city => {
-    const count = city === 'Todas' ? allData.length : allData.filter(r => r[4] === city).length;
+    const count = city === 'Todas' ? allData.length : allData.filter(r => r[8] === city).length;
     const btn = document.createElement('button');
     btn.className = 'city-btn' + (city === activeCity ? ' active' : '');
     const colors = { 'Pucallpa':'#22D17A','Iquitos':'#5EA8FF','Tarapoto':'#FFB830','Todas':'#8DA3B8' };
@@ -1390,13 +1404,13 @@ function updateCityButtons() {
 // ══════════════════════════════════════════════
 function renderTable() {
   document.getElementById('activeCityLabel').textContent = activeCity;
-  const filtered = activeCity === 'Todas' ? allData : allData.filter(r => r[4] === activeCity);
+  const filtered = activeCity === 'Todas' ? allData : allData.filter(r => r[8] === activeCity);
 
   // Stats
   document.getElementById('stTotal').textContent  = filtered.length;
-  document.getElementById('stDone').textContent   = filtered.filter(r => r[10]==='REALIZADO').length;
-  document.getElementById('stPending').textContent= filtered.filter(r => r[10]==='VISITA PROGRAMADA'||r[10]==='POR CONFIRMAR VISITA').length;
-  document.getElementById('stNoEf').textContent   = filtered.filter(r => r[10]==='NO EFECTIVO').length;
+  document.getElementById('stDone').textContent   = filtered.filter(r => r[11]==='REALIZADO').length;
+  document.getElementById('stPending').textContent= filtered.filter(r => r[11]==='VISITA PROGRAMADA'||r[11]==='POR CONFIRMAR VISITA').length;
+  document.getElementById('stNoEf').textContent   = filtered.filter(r => r[11]==='NO EFECTIVO').length;
 
   const tbody = document.getElementById('tableBody');
   if (!filtered.length) {
@@ -1407,7 +1421,7 @@ function renderTable() {
   tbody.innerHTML = '';
   filtered.forEach((row, idx) => {
     const globalIdx = allData.indexOf(row);
-    const [pos, dir, fecha, horario, ciudad, jefe, codDistr, codTTA, resp, ot, status, obs, foto1, foto2, foto3, foto4] = row;
+    const [jefe, cadena, codDistr, codTTA, pos, dir, fecha, horario, ciudad, resp, ot, status, obs, foto1, foto2, foto3, foto4] = row;
 
     const statusMap = {
       'REALIZADO':          ['status-realizado',  'Realizado'],
@@ -1449,17 +1463,17 @@ function renderTable() {
       ? `<input type="date" value="${(fecha||'').substring(0,10)}" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;outline:none;" onchange="quickEdit(${globalIdx},2,this.value)">`
       : formatDate(fecha);
     const horarioCell = isSupervisor
-      ? `<select style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:2px 4px;" onchange="quickEdit(${globalIdx},3,this.value)">
+      ? `<select style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:2px 4px;" onchange="quickEdit(${globalIdx},7,this.value)">
            ${['MAÑANA','TARDE','TODO EL DÍA'].map(h=>`<option${h===horario?' selected':''}>${h}</option>`).join('')}
          </select>`
       : `<span style="font-size:11px;color:var(--text2)">${horario||'–'}</span>`;
     const ciudadCell = isSupervisor
-      ? `<select style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:2px 4px;" onchange="quickEdit(${globalIdx},4,this.value)">
+      ? `<select style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:2px 4px;" onchange="quickEdit(${globalIdx},8,this.value)">
            ${['Pucallpa','Iquitos','Tarapoto'].map(c=>`<option${c===ciudad?' selected':''}>${c}</option>`).join('')}
          </select>`
       : `<span style="font-size:12px;font-weight:500">${ciudad||'–'}</span>`;
     const respCell = isSupervisor
-      ? `<input type="text" value="${resp||''}" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;width:130px;outline:none;" onblur="quickEdit(${globalIdx},8,this.value)">`
+      ? `<input type="text" value="${resp||''}" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;width:130px;outline:none;" onblur="quickEdit(${globalIdx},9,this.value)">`
       : `<span style="font-size:12px;color:var(--text2)">${resp||'–'}</span>`;
 
     const obsCell = isAdmin
@@ -1470,14 +1484,15 @@ function renderTable() {
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td style="font-size:12px;font-weight:500">${jefe||'–'}</td>
+      <td style="font-size:12px;text-align:center">${cadena||'–'}</td>
+      <td style="font-size:12px;text-align:center">${codDistr||'–'}</td>
+      <td style="font-size:12px;text-align:center">${codTTA||'–'}</td>
       <td><strong>${pos||'–'}</strong></td>
       <td style="font-size:12px;color:var(--text2)">${dir||'–'}</td>
       <td style="white-space:nowrap">${fechaCell}</td>
       <td>${horarioCell}</td>
       <td>${ciudadCell}</td>
-      <td style="font-size:12px;font-weight:500">${jefe||'–'}</td>
-      <td style="font-size:12px;text-align:center">${codDistr||'–'}</td>
-      <td style="font-size:12px;text-align:center">${codTTA||'–'}</td>
       <td>${respCell}</td>
       <td style="font-size:12px">${ot||'–'}</td>
       <td><span class="status-badge ${cls}">${label}</span>
@@ -1523,25 +1538,26 @@ function openEditModal(idx) {
   const row = allData[idx];
   document.getElementById('modalTitle').textContent = 'Editar Instalación';
   document.getElementById('editRowIndex').value = idx;
-  document.getElementById('fPos').value     = row[0]||'';
-  document.getElementById('fDir').value     = row[1]||'';
-  document.getElementById('fFecha').value   = (row[2]||'').substring(0,10);
-  document.getElementById('fHorario').value = row[3]||'MAÑANA';
-  document.getElementById('fCiudad').value  = row[4]||'Pucallpa';
-  document.getElementById('fJefe').value    = row[5]||'';
-  document.getElementById('fCodDistr').value= row[6]||'';
-  document.getElementById('fCodTTA').value  = row[7]||'';
-  document.getElementById('fResp').value    = row[8]||'';
-  document.getElementById('fOt').value      = row[9]||'';
-  document.getElementById('fStatus').value  = row[10]||'VISITA PROGRAMADA';
-  document.getElementById('fObs').value     = row[11]||'';
+  document.getElementById('fJefe').value    = row[0]||'';
+  document.getElementById('fCadena').value  = row[1]||'';
+  document.getElementById('fCodDistr').value= row[2]||'';
+  document.getElementById('fCodTTA').value  = row[3]||'';
+  document.getElementById('fPos').value     = row[4]||'';
+  document.getElementById('fDir').value     = row[5]||'';
+  document.getElementById('fFecha').value   = (row[6]||'').substring(0,10);
+  document.getElementById('fHorario').value = row[7]||'MAÑANA';
+  document.getElementById('fCiudad').value  = row[8]||'Pucallpa';
+  document.getElementById('fResp').value    = row[9]||'';
+  document.getElementById('fOt').value      = row[10]||'';
+  document.getElementById('fStatus').value  = row[11]||'VISITA PROGRAMADA';
+  document.getElementById('fObs').value     = row[12]||'';
   // Mostrar primera foto si existe
   if (row[12]) document.getElementById('photoPreview').textContent = '✅ Foto 1 guardada: ' + row[12].substring(0,40) + '…';
   openModal('modalNew');
 }
 
 function clearModalFields() {
-  ['fPos','fDir','fFecha','fJefe','fCodDistr','fCodTTA','fResp','fOt','fObs'].forEach(id => document.getElementById(id).value = '');
+  ['fJefe','fCadena','fCodDistr','fCodTTA','fPos','fDir','fFecha','fResp','fOt','fObs'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('fHorario').value = 'MAÑANA';
   document.getElementById('fCiudad').value  = 'Pucallpa';
   document.getElementById('fStatus').value  = 'VISITA PROGRAMADA';
@@ -1550,19 +1566,20 @@ function clearModalFields() {
 async function saveRow() {
   const idx = document.getElementById('editRowIndex').value;
   const newRow = [
-    document.getElementById('fPos').value.trim(),
-    document.getElementById('fDir').value.trim(),
-    document.getElementById('fFecha').value,
-    document.getElementById('fHorario').value,
-    document.getElementById('fCiudad').value,
-    document.getElementById('fJefe').value.trim(),
-    document.getElementById('fCodDistr').value.trim(),
-    document.getElementById('fCodTTA').value.trim(),
-    document.getElementById('fResp').value.trim(),
-    document.getElementById('fOt').value.trim(),
-    document.getElementById('fStatus').value,
-    document.getElementById('fObs').value.trim(),
-    '', '', '', ''  // Foto 1, 2, 3, 4
+    document.getElementById('fJefe').value.trim(),       // [0]
+    document.getElementById('fCadena').value.trim(),     // [1]
+    document.getElementById('fCodDistr').value.trim(),   // [2]
+    document.getElementById('fCodTTA').value.trim(),     // [3]
+    document.getElementById('fPos').value.trim(),        // [4] Nombre Cliente
+    document.getElementById('fDir').value.trim(),        // [5]
+    document.getElementById('fFecha').value,             // [6]
+    document.getElementById('fHorario').value,           // [7]
+    document.getElementById('fCiudad').value,            // [8]
+    document.getElementById('fResp').value.trim(),       // [9]
+    document.getElementById('fOt').value.trim(),         // [10]
+    document.getElementById('fStatus').value,            // [11]
+    document.getElementById('fObs').value.trim(),        // [12]
+    '', '', '', ''                                       // [13-16] Fotos
   ];
 
   if (!newRow[0]) { showToast('El campo PoS es requerido.', 'error'); return; }
@@ -1597,7 +1614,7 @@ async function saveRow() {
 // ══════════════════════════════════════════════
 async function changeStatus(idx, newStatus) {
   if (!newStatus) return;
-  allData[idx][10] = newStatus;
+  allData[idx][11] = newStatus;
   if (!demoMode) await updateSheetRow(idx, allData[idx]);
   renderTable();
   showToast('Status actualizado.', 'success');
@@ -1779,9 +1796,9 @@ function switchView(view) {
 // DASHBOARD — filtros
 // ══════════════════════════════════════════════
 function buildDashFilters() {
-  const ciudades = [...new Set(allData.map(r=>r[4]).filter(Boolean))].sort();
-  const jefes    = [...new Set(allData.map(r=>r[5]).filter(Boolean))].sort();
-  const cadenas  = [...new Set(allData.map(r=>r[0]).filter(Boolean))].sort();
+  const ciudades = [...new Set(allData.map(r=>r[8]).filter(Boolean))].sort();
+  const jefes    = [...new Set(allData.map(r=>r[0]).filter(Boolean))].sort();
+  const cadenas  = [...new Set(allData.map(r=>r[1]).filter(Boolean))].sort();
 
   const fillSelect = (id, vals) => {
     const el = document.getElementById(id);
@@ -1805,9 +1822,9 @@ function getDashData() {
   const jefe   = document.getElementById('dfJefe')?.value   || '';
   const cadena = document.getElementById('dfCadena')?.value || '';
   return allData.filter(r =>
-    (!ciudad || r[4] === ciudad) &&
-    (!jefe   || r[5] === jefe)   &&
-    (!cadena || r[0] === cadena)
+    (!ciudad || r[8] === ciudad) &&
+    (!jefe   || r[0] === jefe)   &&
+    (!cadena || r[1] === cadena)
   );
 }
 
@@ -1822,8 +1839,8 @@ function renderDashboard() {
   const data = getDashData();
 
   const total   = data.length;
-  const done    = data.filter(r=>r[10]==='REALIZADO').length;
-  const noEf    = data.filter(r=>r[10]==='NO EFECTIVO').length;
+  const done    = data.filter(r=>r[11]==='REALIZADO').length;
+  const noEf    = data.filter(r=>r[11]==='NO EFECTIVO').length;
   const prog    = data.filter(r=>r[10]==='VISITA PROGRAMADA').length;
   const confirm = data.filter(r=>r[10]==='POR CONFIRMAR VISITA').length;
   const efectPct= (done+noEf) > 0 ? Math.round(done/(done+noEf)*100) : 0;
@@ -1842,8 +1859,8 @@ function renderDashboard() {
 
 // Pie chart — OTs por ciudad
 function renderPieChart(data) {
-  const ciudades = [...new Set(data.map(r=>r[4]).filter(Boolean))].sort();
-  const counts   = ciudades.map(c => data.filter(r=>r[4]===c).length);
+  const ciudades = [...new Set(data.map(r=>r[8]).filter(Boolean))].sort();
+  const counts   = ciudades.map(c => data.filter(r=>r[8]===c).length);
   const total    = data.length;
   const colors   = ['#2563EB','#16A34A','#D97706','#DC2626','#7C3AED','#0891B2'];
 
@@ -1906,7 +1923,7 @@ function renderStatusChart(done, noEf, prog, confirm) {
 
 // Bar chart — cobertura y efectividad por ciudad
 function renderCoberturaChart(data) {
-  const ciudades = [...new Set(data.map(r=>r[4]).filter(Boolean))].sort();
+  const ciudades = [...new Set(data.map(r=>r[8]).filter(Boolean))].sort();
   const coberturas  = ciudades.map(c => {
     const sub = data.filter(r=>r[4]===c);
     return sub.length > 0 ? Math.round(sub.filter(r=>r[10]==='REALIZADO').length/sub.length*100) : 0;
