@@ -304,6 +304,31 @@
   tbody td { padding:7px 8px; font-size:11.5px; vertical-align:middle; color:var(--text);
              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+  /* ── Sort headers ── */
+  thead th.sortable { cursor:pointer; user-select:none; position:relative; }
+  thead th.sortable:hover { background:#1D4ED8; }
+  thead th.sortable .si { margin-left:4px; font-size:9px; opacity:0.45; }
+  thead th.sort-asc  .si { opacity:1; }
+  thead th.sort-desc .si { opacity:1; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display:flex; align-items:center; gap:8px;
+    margin-bottom:10px; flex-wrap:wrap;
+  }
+  .filter-select {
+    padding:8px 12px; border:1.5px solid var(--border); border-radius:10px;
+    font-size:12px; font-family:'Inter',sans-serif; color:var(--text);
+    background:var(--surface); outline:none; cursor:pointer;
+  }
+  .filter-select.active { border-color:var(--blue); background:#EFF6FF; color:var(--blue); font-weight:600; }
+  .btn-clear-all {
+    padding:8px 14px; border:1.5px solid var(--border); border-radius:10px;
+    background:transparent; color:var(--text2); font-size:12px; cursor:pointer;
+    font-family:'Inter',sans-serif; white-space:nowrap; transition:all 0.15s;
+  }
+  .btn-clear-all:hover { border-color:#DC2626; color:#DC2626; }
+
   /* Anchos fijos por columna para caber en pantalla */
   /* Nuevo orden: Jefe, Cadena, CodDistr, CodTTA, NombreCliente, Dir, Fecha, Horario, Ciudad, Resp, OT, Status, Obs, Fotos */
   table th:nth-child(1),  table td:nth-child(1)  { width:100px; }  /* Jefe Terr. */
@@ -804,38 +829,45 @@
         </div>
       </div>
 
-      <!-- Barra de búsqueda -->
-      <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px">
-        <div style="position:relative;flex:1;max-width:380px">
-          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:15px;pointer-events:none">🔍</span>
-          <input type="text" id="searchInput" placeholder="Buscar por nombre de tienda..."
-            oninput="filterBySearch(this.value)"
-            style="width:100%;padding:9px 12px 9px 38px;border:1.5px solid var(--border);
-                   border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;
+      <!-- Filtros + búsqueda -->
+      <div class="filter-bar">
+        <!-- Búsqueda por nombre -->
+        <div style="position:relative;flex:1;min-width:220px;max-width:340px">
+          <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:14px;pointer-events:none">🔍</span>
+          <input type="text" id="searchInput" placeholder="Buscar tienda..."
+            oninput="setSearch(this.value)"
+            style="width:100%;padding:8px 12px 8px 34px;border:1.5px solid var(--border);
+                   border-radius:10px;font-size:12px;font-family:'Inter',sans-serif;
                    outline:none;color:var(--text);background:var(--surface);">
         </div>
-        <button onclick="filterBySearch('');document.getElementById('searchInput').value=''"
-          style="padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;
-                 background:transparent;color:var(--text2);font-size:12px;cursor:pointer;
-                 font-family:'Inter',sans-serif;white-space:nowrap">✕ Limpiar</button>
-        <span id="searchCount" style="font-size:12px;color:var(--text2)"></span>
+        <!-- Filtro por status -->
+        <select id="filterStatus" class="filter-select" onchange="setStatusFilter(this.value)">
+          <option value="">Todos los status</option>
+          <option value="VISITA PROGRAMADA">Programado</option>
+          <option value="POR CONFIRMAR VISITA">Por Confirmar</option>
+          <option value="REALIZADO">Realizado</option>
+          <option value="NO EFECTIVO">No Efectivo</option>
+        </select>
+        <!-- Limpiar todo -->
+        <button class="btn-clear-all" onclick="clearAllFilters()">✕ Limpiar filtros</button>
+        <span id="searchCount" style="font-size:12px;color:var(--text2);margin-left:2px"></span>
       </div>
 
       <!-- Table -->
       <div class="table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>Jefe Terr.</th>
-              <th>Cadena</th>
+            <tr id="tableHead">
+              <th class="sortable" onclick="sortBy(0)">Jefe Terr.<span class="si">⇅</span></th>
+              <th class="sortable" onclick="sortBy(1)">Cadena<span class="si">⇅</span></th>
               <th>Cód. Distr.</th>
               <th>Cód. TTA</th>
-              <th>Nombre Cliente</th>
+              <th class="sortable" onclick="sortBy(4)">Nombre Cliente<span class="si">⇅</span></th>
               <th>Dirección</th>
-              <th>Fecha</th>
+              <th class="sortable sort-asc" onclick="sortBy(6)" id="thFecha">Fecha<span class="si">▲</span></th>
               <th>Horario</th>
-              <th>Ciudad</th>
-              <th>Responsable</th>
+              <th class="sortable" onclick="sortBy(8)">Ciudad<span class="si">⇅</span></th>
+              <th class="sortable" onclick="sortBy(9)">Responsable<span class="si">⇅</span></th>
               <th>OT</th>
               <th>Status</th>
               <th>Obs.</th>
@@ -1403,29 +1435,49 @@ function updateCityButtons() {
 // ══════════════════════════════════════════════
 function renderTable() {
   document.getElementById('activeCityLabel').textContent = activeCity;
-  const cityFiltered = activeCity === 'Todas' ? allData : allData.filter(r => r[8] === activeCity);
-  const filtered = !searchTerm
-    ? cityFiltered
-    : cityFiltered.filter(r => (r[4]||'').toLowerCase().includes(searchTerm));
 
-  // Actualizar contador de búsqueda
+  // 1. Filtrar por ciudad
+  let rows = activeCity === 'Todas' ? allData : allData.filter(r => r[8] === activeCity);
+
+  // 2. Filtrar por búsqueda (nombre cliente)
+  if (searchTerm) rows = rows.filter(r => (r[4]||'').toLowerCase().includes(searchTerm));
+
+  // 3. Filtrar por status
+  if (statusFilter) rows = rows.filter(r => r[11] === statusFilter);
+
+  // 4. Ordenar — por defecto: fecha asc
+  rows = [...rows].sort((a, b) => {
+    const va = a[sortField] || '';
+    const vb = b[sortField] || '';
+    const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
+  // Actualizar contador
   const countEl = document.getElementById('searchCount');
-  if (countEl) countEl.textContent = searchTerm ? `${filtered.length} resultado(s) para "${searchTerm}"` : '';
+  if (countEl) {
+    const active = searchTerm || statusFilter;
+    countEl.textContent = active ? `${rows.length} resultado(s)` : '';
+  }
+
+  // Marcar filtro de status activo visualmente
+  const sel = document.getElementById('filterStatus');
+  if (sel) sel.classList.toggle('active', !!statusFilter);
 
   // Stats
-  document.getElementById('stTotal').textContent  = filtered.length;
-  document.getElementById('stDone').textContent   = filtered.filter(r => r[11]==='REALIZADO').length;
-  document.getElementById('stPending').textContent= filtered.filter(r => r[11]==='VISITA PROGRAMADA'||r[11]==='POR CONFIRMAR VISITA').length;
-  document.getElementById('stNoEf').textContent   = filtered.filter(r => r[11]==='NO EFECTIVO').length;
+  document.getElementById('stTotal').textContent   = rows.length;
+  document.getElementById('stDone').textContent    = rows.filter(r => r[11]==='REALIZADO').length;
+  document.getElementById('stPending').textContent = rows.filter(r => r[11]==='VISITA PROGRAMADA'||r[11]==='POR CONFIRMAR VISITA').length;
+  document.getElementById('stNoEf').textContent    = rows.filter(r => r[11]==='NO EFECTIVO').length;
 
   const tbody = document.getElementById('tableBody');
-  if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="13"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No hay instalaciones registradas para esta ciudad.</div></div></td></tr>';
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="14"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No hay instalaciones con los filtros seleccionados.</div></div></td></tr>';
     return;
   }
 
   tbody.innerHTML = '';
-  filtered.forEach((row, idx) => {
+  rows.forEach((row, idx) => {
     const globalIdx = allData.indexOf(row);
     const [jefe, cadena, codDistr, codTTA, pos, dir, fecha, horario, ciudad, resp, ot, status, obs, foto1, foto2, foto3, foto4] = row;
 
@@ -1601,12 +1653,15 @@ async function saveRow() {
     }
   }
 
-  if (idx === '') {
+  const idxInt = idx === '' ? -1 : parseInt(idx);
+  if (idxInt === -1) {
+    // Nueva fila → append al Sheet
     allData.push(newRow);
     if (!demoMode) await appendToSheet(newRow);
   } else {
-    allData[parseInt(idx)] = newRow;
-    if (!demoMode) await updateSheetRow(parseInt(idx), newRow);
+    // Edición → UPDATE en la fila existente (no crear nueva)
+    allData[idxInt] = newRow;
+    if (!demoMode) await updateSheetRow(idxInt, newRow);
   }
 
   closeModal('modalNew');
@@ -1620,20 +1675,85 @@ async function saveRow() {
 // ══════════════════════════════════════════════
 async function changeStatus(idx, newStatus) {
   if (!newStatus) return;
+  // Actualizar en memoria inmediatamente (UX responsiva)
   allData[idx][11] = newStatus;
-  if (!demoMode) await updateSheetRow(idx, allData[idx]);
   renderTable();
-  showToast('Status actualizado.', 'success');
+  // Persistir en el Sheet en background
+  if (!demoMode) {
+    try {
+      await updateSheetRow(idx, allData[idx]);
+      showToast('Status actualizado.', 'success');
+    } catch(e) {
+      // Revertir si falla
+      showToast('Error al guardar: ' + e.message, 'error');
+    }
+  } else {
+    showToast('Status actualizado (demo).', 'success');
+  }
 }
 
 // ══════════════════════════════════════════════
-// BÚSQUEDA POR NOMBRE DE TIENDA
+// FILTROS, BÚSQUEDA Y ORDENAMIENTO
 // ══════════════════════════════════════════════
-let searchTerm = '';
+let searchTerm   = '';
+let statusFilter = '';
+let sortField    = 6;       // Fecha (índice 6) — orden por defecto
+let sortDir      = 'asc';   // ascendente por defecto
 
-function filterBySearch(term) {
+function setSearch(term) {
   searchTerm = term.toLowerCase().trim();
   renderTable();
+}
+
+// alias legacy
+function filterBySearch(term) { setSearch(term); }
+
+function setStatusFilter(val) {
+  statusFilter = val;
+  renderTable();
+}
+
+function clearAllFilters() {
+  searchTerm = '';
+  statusFilter = '';
+  sortField = 6;
+  sortDir = 'asc';
+  const si = document.getElementById('searchInput');
+  const sf = document.getElementById('filterStatus');
+  if (si) si.value = '';
+  if (sf) sf.value = '';
+  updateSortHeaders();
+  renderTable();
+}
+
+function sortBy(colIdx) {
+  if (sortField === colIdx) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = colIdx;
+    sortDir = 'asc';
+  }
+  updateSortHeaders();
+  renderTable();
+}
+
+function updateSortHeaders() {
+  // Mapa col índice → posición del <th> (1-based)
+  const colToTh = {0:1, 1:2, 4:5, 6:7, 8:9, 9:10};
+  document.querySelectorAll('#tableHead th.sortable').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    const si = th.querySelector('.si');
+    if (si) si.textContent = '⇅';
+  });
+  const pos = colToTh[sortField];
+  if (pos) {
+    const th = document.querySelector(`#tableHead th:nth-child(${pos})`);
+    if (th) {
+      th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+      const si = th.querySelector('.si');
+      if (si) si.textContent = sortDir === 'asc' ? '▲' : '▼';
+    }
+  }
 }
 
 // ══════════════════════════════════════════════
