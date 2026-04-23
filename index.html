@@ -1520,7 +1520,7 @@ function renderTable() {
 
     // Supervisor puede editar fechas/horario/ciudad/responsable inline
     const fechaCell = isSupervisor
-      ? `<input type="date" value="${(fecha||'').substring(0,10)}" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;outline:none;" onchange="quickEdit(${globalIdx},2,this.value)">`
+      ? `<input type="date" value="${(fecha||'').substring(0,10)}" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;outline:none;" onchange="quickEdit(${globalIdx},6,this.value)">`
       : formatDate(fecha);
     const horarioCell = isSupervisor
       ? `<select style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:2px 4px;" onchange="quickEdit(${globalIdx},7,this.value)">
@@ -1760,7 +1760,7 @@ function updateSortHeaders() {
 
 // ══════════════════════════════════════════════
 // EDICIÓN RÁPIDA INLINE (supervisor)
-// colIndex: 2=Fecha, 3=Horario, 4=Ciudad, 5=Responsable
+// Nuevo orden columnas: [6]=Fecha [7]=Horario [8]=Ciudad [9]=Responsable
 // ══════════════════════════════════════════════
 async function quickEdit(idx, colIndex, value) {
   if (allData[idx][colIndex] === value) return;
@@ -1775,14 +1775,14 @@ async function quickEdit(idx, colIndex, value) {
 function openObsModal(idx, pos) {
   document.getElementById('obsRowIndex').value = idx;
   document.getElementById('modalObsPos').textContent = pos;
-  document.getElementById('obsText').value = allData[idx][8] || '';
+  document.getElementById('obsText').value = allData[idx][12] || '';
   openModal('modalObs');
 }
 
 async function saveObs() {
   const idx = parseInt(document.getElementById('obsRowIndex').value);
   const obs = document.getElementById('obsText').value.trim();
-  allData[idx][8] = obs;
+  allData[idx][12] = obs; // índice 12 = OBSERVACIONES en nuevo orden
   if (!demoMode) await updateSheetRow(idx, allData[idx]);
   closeModal('modalObs');
   renderTable();
@@ -1850,20 +1850,24 @@ async function appendToSheet(row) {
 }
 
 async function updateSheetRow(idx, row) {
+  // row[17] = fila real en el sheet (enviada por getAllData)
+  // Si no existe (fila nueva aún no sincronizada), usar idx+3 como fallback
+  const sheetRow = row[17] ? parseInt(row[17]) : (idx + 3);
+  const dataToSend = row.slice(0, 17); // enviar solo los 17 cols de datos, no el nro de fila
   const json = await jsonpFetch(CONFIG.SCRIPT_URL, {
     action: 'update',
-    idx: idx + 3,  // fila 1=título, 2=encabezados, 3+=datos → idx 0 → fila 3
-    data: JSON.stringify(row)
+    idx:    sheetRow,
+    data:   JSON.stringify(dataToSend)
   });
   if (json.error) throw new Error(json.error);
   return json;
 }
 
 async function uploadToDrive(file, name) {
-  // Comprimir antes de subir (máx 1024px, calidad 0.75 → ~100-200KB)
-  const compressed = await compressImage(file, 1024, 0.75);
+  // Comprimir fuerte para que quepa en URL JSONP (máx ~6000 chars de base64)
+  // 500px / 0.5 ≈ 20-40KB comprimida ≈ 55-80KB base64 ← seguro para URL
+  const compressed = await compressImage(file, 500, 0.55);
 
-  // Convertir a base64 (sin prefijo)
   const b64 = await new Promise((res, rej) => {
     const reader = new FileReader();
     reader.onload = () => res(reader.result.split(',')[1]);
@@ -1872,39 +1876,19 @@ async function uploadToDrive(file, name) {
   });
 
   const filename = name.replace(/[^a-zA-Z0-9_-]/g,'_') + '_' + Date.now() + '.jpg';
-  const mimeType = 'image/jpeg';
 
-  // POST via fetch con mode no-cors no devuelve respuesta útil.
-  // Usamos el método: enviar via fetch normal al script desplegado como web app.
-  // Apps Script con "Acceso: Cualquier persona" acepta POST sin auth.
-  return new Promise((resolve, reject) => {
-    const cbName = 'ttphoto_' + Date.now();
-    const timeoutId = setTimeout(() => {
-      delete window[cbName];
-      reject(new Error('Timeout subiendo foto. Verifica permisos del script.'));
-    }, 30000); // 30s para fotos
-
-    window[cbName] = function(data) {
-      clearTimeout(timeoutId);
-      delete window[cbName];
-      if (data.error) reject(new Error(data.error));
-      else resolve(data.url);
-    };
-
-    // Enviar via fetch con callback JSONP en query string
-    // El body POST lleva la foto, el callback va en la URL
-    fetch(CONFIG.SCRIPT_URL + '?callback=' + cbName, {
-      method: 'POST',
-      mode: 'no-cors',  // evita CORS pero no leeremos la respuesta directamente
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'action=uploadPhoto&filename=' + encodeURIComponent(filename) +
-            '&mimeType=' + encodeURIComponent(mimeType) +
-            '&data=' + encodeURIComponent(b64)
-    }).catch(() => {
-      // no-cors siempre lanza error de lectura — es esperado
-      // la respuesta llega vía el callback JSONP inyectado por el script
-    });
+  // Enviar via JSONP GET (mismo mecanismo que el resto de la app)
+  // Apps Script recibe la foto en e.parameter.data y la sube a Drive
+  const json = await jsonpFetch(CONFIG.SCRIPT_URL, {
+    action:   'uploadPhoto',
+    filename: filename,
+    mimeType: 'image/jpeg',
+    data:     b64
   });
+
+  if (json.error) throw new Error(json.error);
+  if (!json.url)  throw new Error('El script no devolvió URL de la foto');
+  return json.url;
 }
 
 // Comprime imagen a maxWidth px con calidad q (0-1)
