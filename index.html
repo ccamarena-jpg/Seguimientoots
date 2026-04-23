@@ -672,7 +672,7 @@
     <!-- Panel contraseña (BAT) -->
     <div id="panelPass" style="display:none">
       <p style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:14px">
-        Inicia sesión con tu cuenta <strong>@bat.com</strong>
+        Inicia sesión con tu cuenta <strong>@bat.com</strong> o supervisor
       </p>
       <div class="field">
         <input type="email" id="emailInput" placeholder="correo@bat.com" autocomplete="email">
@@ -1105,12 +1105,14 @@ const TTAUDIT_ROLES = {
 
 // ── USUARIOS BAT (contraseña) ──────────────────────────────────
 const BAT_USERS = {
-  'bat@ttaudit.com':        { pass: '2026',    name: 'Cliente BAT'  },
-  'demichelle@bat.com':     { pass: 'Bat2026', name: 'Demichelle'   },
-  'david@bat.com':          { pass: 'Bat2026', name: 'David'        },
-  'nicole@bat.com':         { pass: 'Bat2026', name: 'Nicole'       },
-  'fernando@bat.com':       { pass: 'Bat2026', name: 'Fernando'     },
-  'renzo@bat.com':          { pass: 'Bat2026', name: 'Renzo'        },
+  'bat@ttaudit.com':        { pass: '2026',       name: 'Cliente BAT',  role: 'client'     },
+  'demichelle@bat.com':     { pass: 'Bat2026',    name: 'Demichelle',   role: 'client'     },
+  'david@bat.com':          { pass: 'Bat2026',    name: 'David',        role: 'client'     },
+  'nicole@bat.com':         { pass: 'Bat2026',    name: 'Nicole',       role: 'client'     },
+  'fernando@bat.com':       { pass: 'Bat2026',    name: 'Fernando',     role: 'client'     },
+  'renzo@bat.com':          { pass: 'Bat2026',    name: 'Renzo',        role: 'client'     },
+  // Supervisor — fallback si Google login falla
+  'jmarinos@ttaudit.com':   { pass: 'audit2026',  name: 'J. Marinos',   role: 'supervisor' },
 };
 
 // ══════════════════════════════════════════════
@@ -1194,10 +1196,10 @@ function doPassLogin() {
   const err   = document.getElementById('loginError');
 
   const user = BAT_USERS[email];
-  if (!user)            { err.textContent = 'Usuario no encontrado.'; return; }
-  if (user.pass !== pass){ err.textContent = 'Contraseña incorrecta.'; return; }
+  if (!user)             { err.textContent = 'Usuario no encontrado.'; return; }
+  if (user.pass !== pass){ err.textContent = 'Contraseña incorrecta.';  return; }
 
-  finishLogin(email, 'client', user.name);
+  finishLogin(email, user.role || 'client', user.name);
 }
 
 // ── Finalizar login (común a ambos métodos) ──
@@ -1534,7 +1536,7 @@ function renderTable() {
       ? `<input type="text" value="${resp||''}" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;width:130px;outline:none;" onblur="quickEdit(${globalIdx},9,this.value)">`
       : `<span style="font-size:12px;color:var(--text2)">${resp||'–'}</span>`;
 
-    const obsCell = isAdmin
+    const obsCell = (isAdmin || isSupervisor)
       ? `<span class="obs-text" style="white-space:normal;word-break:break-word">${obs || '<span class="obs-empty">–</span>'}</span>`
       : `<button class="photo-upload-btn" onclick="openObsModal(${globalIdx},'${(pos||'').replace(/'/g,"\\'")}')">
           ${obs ? '✏️ ' + (obs.substring(0,20) + (obs.length>20?'…':'')) : '+ Agregar'}
