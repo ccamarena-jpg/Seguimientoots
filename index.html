@@ -1362,30 +1362,43 @@ function showStatus(msg, type) {
 async function jsonpFetch(url, params) {
   const qs = Object.entries(params)
     .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+  const fullUrl = url + '?' + qs;
 
-  // Apps Script con Workspace devuelve JSON puro (sin JSONP wrapper)
-  // Usamos fetch con no-cors no funciona, pero la URL devuelve JSON directamente
-  // El script está en el mismo contexto de Workspace que permite leer la respuesta
-  const resp = await fetch(url + '?' + qs, {
-    method: 'GET',
-    redirect: 'follow',
-    cache: 'no-cache'
-  });
+  // Intentar múltiples métodos en orden
+  const methods = [
+    // 1. XHR sin credenciales (a veces pasa CORS cuando fetch no)
+    () => new Promise((res, rej) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', fullUrl, true);
+      xhr.withCredentials = false;
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) res(xhr.responseText);
+        else rej(new Error('XHR ' + xhr.status));
+      };
+      xhr.onerror = () => rej(new Error('XHR error'));
+      xhr.timeout = 15000;
+      xhr.ontimeout = () => rej(new Error('XHR timeout'));
+      xhr.send();
+    }),
+    // 2. fetch normal
+    () => fetch(fullUrl, { redirect: 'follow', cache: 'no-cache' }).then(r => r.text()),
+    // 3. fetch sin credentials
+    () => fetch(fullUrl, { mode: 'cors', credentials: 'omit' }).then(r => r.text()),
+  ];
 
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-
-  const text = await resp.text();
-  const clean = text.trim();
-
-  // JSON puro
-  if (clean.startsWith('{') || clean.startsWith('[')) {
-    return JSON.parse(clean);
+  let lastError;
+  for (const method of methods) {
+    try {
+      const text = await method();
+      const clean = (text || '').trim();
+      if (clean.startsWith('{') || clean.startsWith('[')) return JSON.parse(clean);
+      const m = clean.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
+      if (m) return JSON.parse(m[1]);
+    } catch(e) {
+      lastError = e;
+    }
   }
-  // JSONP: callback({...})
-  const m = clean.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
-  if (m) return JSON.parse(m[1]);
-
-  throw new Error('Respuesta inesperada del script');
+  throw new Error('No se pudo conectar: ' + (lastError?.message || 'CORS bloqueado'));
 }
 
 // ══════════════════════════════════════════════
