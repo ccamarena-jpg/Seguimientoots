@@ -1497,7 +1497,21 @@ function renderTable() {
   tbody.innerHTML = '';
   rows.forEach((row, idx) => {
     const globalIdx = allData.indexOf(row);
-    const [jefe, cadena, codDistr, codTTA, pos, dir, fecha, horario, ciudad, resp, ot, status, obs, foto1, foto2, foto3, foto4] = row;
+    // Leer los campos raw del array
+    let [jefe, cadena, codDistr, codTTA, pos, dir, fecha, horario, ciudad, resp, ot, status, _obs, _f1, _f2, _f3, _f4] = row;
+
+    // Auto-detectar URLs de Drive mal ubicadas en obs
+    // Si obs contiene una URL de Drive, moverla a foto1 y limpiar obs
+    const isDriveUrl = v => v && (v.includes('drive.google.com') || v.includes('docs.google.com'));
+    
+    let obs   = _obs  || '';
+    let foto1 = _f1   || '';
+    let foto2 = _f2   || '';
+    let foto3 = _f3   || '';
+    let foto4 = _f4   || '';
+
+    if (isDriveUrl(obs) && !foto1) { foto1 = obs; obs = ''; }
+    if (isDriveUrl(obs) && foto1)  { foto2 = obs; obs = ''; }
 
     const statusMap = {
       'REALIZADO':          ['status-realizado',  'Realizado'],
