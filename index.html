@@ -1359,28 +1359,33 @@ function showStatus(msg, type) {
 // ══════════════════════════════════════════════
 // JSONP — resuelve CORS de Apps Script
 // ══════════════════════════════════════════════
-async function jsonpFetch(url, params) {
-  const qs = Object.entries(params)
-    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  const fullUrl = url + '?' + qs;
+function jsonpFetch(url, params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'ttcb_' + Date.now();
 
-  // Apps Script redirige a script.googleusercontent.com/macros/echo
-  // Ese dominio sí permite fetch con seguimiento de redirección
-  const resp = await fetch(fullUrl, {
-    redirect: 'follow',
-    headers: { 'Accept': 'application/json, text/javascript, */*' }
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      document.getElementById(cbName)?.remove();
+      reject(new Error('Sin respuesta del script (timeout 20s)'));
+    }, 20000);
+
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      document.getElementById(cbName)?.remove();
+      resolve(data);
+    };
+
+    const qs = Object.entries({ ...params, callback: cbName })
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+
+    const script = document.createElement('script');
+    script.id = cbName;
+    script.src = url + '?' + qs;
+    // NO ponemos onerror — Apps Script dispara onerror por la redirección
+    // aunque la respuesta llegue bien. Dejamos que el callback o el timeout resuelvan.
+    document.head.appendChild(script);
   });
-
-  const text = await resp.text();
-
-  // La respuesta puede ser JSON puro o JSONP: callback({...})
-  const clean = text.trim();
-  if (clean.startsWith('{') || clean.startsWith('[')) {
-    return JSON.parse(clean);
-  }
-  const m = clean.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
-  if (m) return JSON.parse(m[1]);
-  throw new Error('Respuesta inesperada: ' + clean.substring(0, 100));
 }
 
 // ══════════════════════════════════════════════
