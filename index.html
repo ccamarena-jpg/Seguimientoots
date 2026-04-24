@@ -1081,7 +1081,7 @@
 // CONFIG — Apps Script URL (sin OAuth, sin APIs)
 // ══════════════════════════════════════════════
 const CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwgrGbqKmrPe3vcY3c-ijz6YKALW-iX1rbAQqUQBX0fBzjuzYxEtfJxofhU0RL7g_KbJQ/exec'
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxrI37dGL2OdDcKa1tq4IMDoCHoQk00rZKL99RH7HEMwvO8ULOo2Wz34_cGBeAYG5_o1Q/exec'
 };
 
 // ══════════════════════════════════════════════
@@ -1359,74 +1359,33 @@ function showStatus(msg, type) {
 // ══════════════════════════════════════════════
 // JSONP — resuelve CORS de Apps Script
 // ══════════════════════════════════════════════
-function jsonpFetch(url, params) {
-  return new Promise((resolve, reject) => {
-    const cbName = 'ttcb_' + Date.now();
+async function jsonpFetch(url, params) {
+  const qs = Object.entries(params)
+    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
 
-    const timeout = setTimeout(() => {
-      delete window[cbName];
-      document.getElementById(cbName)?.remove();
-      reject(new Error('Sin respuesta del script'));
-    }, 20000);
-
-    window[cbName] = function(data) {
-      clearTimeout(timeout);
-      delete window[cbName];
-      document.getElementById(cbName)?.remove();
-      resolve(data);
-    };
-
-    const qs = Object.entries({ ...params, callback: cbName })
-      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-
-    const iframe = document.createElement('iframe');
-    iframe.id = cbName;
-    iframe.style.cssText = 'display:none;width:0;height:0;border:0';
-    iframe.src = url + '?' + qs;
-
-    iframe.onload = () => {
-      try {
-        // Leer el texto del body del iframe
-        const body = iframe.contentDocument?.body?.innerText
-                  || iframe.contentWindow?.document?.body?.innerText
-                  || '';
-
-        if (body) {
-          // El body contiene: ttcb_123({"data":[...]})
-          // Extraer el JSON de dentro del callback
-          const m = body.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
-          if (m) {
-            clearTimeout(timeout);
-            delete window[cbName];
-            iframe.remove();
-            resolve(JSON.parse(m[1]));
-            return;
-          }
-          // O puede ser JSON puro
-          if (body.trim().startsWith('{') || body.trim().startsWith('[')) {
-            clearTimeout(timeout);
-            delete window[cbName];
-            iframe.remove();
-            resolve(JSON.parse(body.trim()));
-            return;
-          }
-        }
-        // Si no pudimos leer, dejar que el callback o timeout resuelvan
-      } catch(e) {
-        // Cross-origin bloqueó el acceso — el callback debería haberse ejecutado
-        // Si no se ejecutó, el timeout rechazará
-      }
-    };
-
-    iframe.onerror = () => {
-      clearTimeout(timeout);
-      delete window[cbName];
-      iframe.remove();
-      reject(new Error('Error cargando el script'));
-    };
-
-    document.body.appendChild(iframe);
+  // Apps Script con Workspace devuelve JSON puro (sin JSONP wrapper)
+  // Usamos fetch con no-cors no funciona, pero la URL devuelve JSON directamente
+  // El script está en el mismo contexto de Workspace que permite leer la respuesta
+  const resp = await fetch(url + '?' + qs, {
+    method: 'GET',
+    redirect: 'follow',
+    cache: 'no-cache'
   });
+
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+  const text = await resp.text();
+  const clean = text.trim();
+
+  // JSON puro
+  if (clean.startsWith('{') || clean.startsWith('[')) {
+    return JSON.parse(clean);
+  }
+  // JSONP: callback({...})
+  const m = clean.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
+  if (m) return JSON.parse(m[1]);
+
+  throw new Error('Respuesta inesperada del script');
 }
 
 // ══════════════════════════════════════════════
