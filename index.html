@@ -1112,7 +1112,12 @@ const BAT_USERS = {
   'fernando@bat.com':       { pass: 'Bat2026',    name: 'Fernando',     role: 'client'     },
   'renzo@bat.com':          { pass: 'Bat2026',    name: 'Renzo',        role: 'client'     },
   // Supervisor — fallback si Google login falla
-  'jmarinos@ttaudit.com':   { pass: 'audit2026',  name: 'J. Marinos',   role: 'supervisor' },
+  'jmarinos@ttaudit.com':      { pass: 'audit2026',  name: 'J. Marinos',        role: 'supervisor' },
+  // Admins TT Audit — fallback si Google login falla
+  'mcarhuallanqui@ttaudit.com':{ pass: 'Audit2026',  name: 'M. Carhuallanqui',  role: 'admin'      },
+  'ccamarena@ttaudit.com':     { pass: 'Audit2026',  name: 'C. Camarena',       role: 'admin'      },
+  'abaltazar@ttaudit.com':     { pass: 'Audit2026',  name: 'A. Baltazar',       role: 'admin'      },
+  'ycontreras@ttaudit.com':    { pass: 'Audit2026',  name: 'Y. Contreras',      role: 'admin'      },
 };
 
 // ══════════════════════════════════════════════
@@ -1315,32 +1320,37 @@ function verifyConfigPass() { verifyAdminCode(); } // legacy alias
 async function testScriptConnection() {
   const statusEl = document.getElementById('configStatus');
   if (statusEl) {
-    statusEl.style.display = 'block';
-    statusEl.style.background = '#EFF6FF';
-    statusEl.style.border = '1px solid #BFDBFE';
-    statusEl.style.color = '#1D4ED8';
-    statusEl.textContent = '🔄 Probando conexión con: ' + CONFIG.SCRIPT_URL.substring(0,60) + '...';
+    statusEl.style.cssText = 'display:block;background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;padding:10px;border-radius:8px;font-size:13px;';
+    statusEl.textContent = '🔄 Probando conexión…';
   }
   try {
     const data = await jsonpFetch(CONFIG.SCRIPT_URL, { action: 'getAll' });
     if (data.error) throw new Error(data.error);
-    const msg = '✅ Conectado — ' + (data.data ? data.data.length : 0) + ' registros en el Sheet';
+    const count = data.data ? data.data.length : 0;
+    const msg = '✅ Conectado — ' + count + ' registros en el Sheet';
     if (statusEl) {
-      statusEl.style.background = '#F0FDF4';
-      statusEl.style.border = '1px solid #BBF7D0';
-      statusEl.style.color = '#16A34A';
+      statusEl.style.cssText = 'display:block;background:#F0FDF4;border:1px solid #BBF7D0;color:#16A34A;padding:10px;border-radius:8px;font-size:13px;';
       statusEl.textContent = msg;
     }
-    showToast(msg, 'success');
+    // Si estaba en demo mode y ahora conecta, salir del demo mode
+    if (demoMode) {
+      demoMode = false;
+      updateConfigDot();
+      await loadData();
+      showToast('✅ Reconectado al Sheet — ' + count + ' registros', 'success');
+    } else {
+      showToast(msg, 'success');
+    }
   } catch(e) {
-    const msg = '❌ ' + e.message;
+    const isRedirect = e.message.includes('Apps Script') || e.message.includes('expiró');
+    const guidance = isRedirect
+      ? '\n\n👉 Solución: En Google Apps Script → Implementar → Nueva implementación → "Ejecutar como: Yo" + "Acceso: Cualquier persona" → Copiar nueva URL.'
+      : '';
     if (statusEl) {
-      statusEl.style.background = '#FEF2F2';
-      statusEl.style.border = '1px solid #FECACA';
-      statusEl.style.color = '#DC2626';
-      statusEl.textContent = msg;
+      statusEl.style.cssText = 'display:block;background:#FEF2F2;border:1px solid #FECACA;color:#DC2626;padding:10px;border-radius:8px;font-size:13px;white-space:pre-line;';
+      statusEl.textContent = '❌ ' + e.message + guidance;
     }
-    showToast(msg, 'error');
+    showToast('❌ Error de conexión: ' + e.message.substring(0,60), 'error');
   }
 }
 
@@ -1400,6 +1410,11 @@ function jsonpFetch(url, params) {
 
       const text = (e.data.text || '').trim();
       try {
+        // Detectar respuesta HTML (redirect a login de Google, script no publicado correctamente)
+        if (text.startsWith('<!DOCTYPE') || text.startsWith('<html') || text.toLowerCase().includes('<title>sign in</title>')) {
+          reject(new Error('El Apps Script no está respondiendo. Puede que la implementación expiró o necesita redespliegue. Accede a ⚙️ Configuración para más info.'));
+          return;
+        }
         // JSON puro
         if (text.startsWith('{') || text.startsWith('[')) {
           resolve(JSON.parse(text));
@@ -1408,9 +1423,9 @@ function jsonpFetch(url, params) {
         // JSONP: ttcb_123({...}) — extraer el JSON
         const m = text.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
         if (m) { resolve(JSON.parse(m[1])); return; }
-        reject(new Error('Respuesta inesperada: ' + text.substring(0, 80)));
+        reject(new Error('Respuesta inesperada del servidor: ' + text.substring(0, 80)));
       } catch(err) {
-        reject(new Error('Error parseando: ' + err.message));
+        reject(new Error('Error parseando respuesta: ' + err.message));
       }
     };
 
@@ -1743,6 +1758,7 @@ async function saveRow() {
 // ══════════════════════════════════════════════
 async function changeStatus(idx, newStatus) {
   if (!newStatus) return;
+  const prevStatus = allData[idx][11];
   // Actualizar en memoria inmediatamente (UX responsiva)
   allData[idx][11] = newStatus;
   renderTable();
@@ -1752,8 +1768,10 @@ async function changeStatus(idx, newStatus) {
       await updateSheetRow(idx, allData[idx]);
       showToast('Status actualizado.', 'success');
     } catch(e) {
-      // Revertir si falla
-      showToast('Error al guardar: ' + e.message, 'error');
+      // Revertir en memoria si falla
+      allData[idx][11] = prevStatus;
+      renderTable();
+      showToast('❌ Error al guardar status: ' + e.message, 'error');
     }
   } else {
     showToast('Status actualizado (demo).', 'success');
@@ -1932,22 +1950,33 @@ async function updateSheetRow(idx, row) {
 async function uploadToDrive(file, name) {
   // Comprimir agresivamente para que quepa en la URL del GET request
   // Límite URL de Apps Script: ~7000 chars → base64 max ~5000 chars → imagen ~3KB
-  // 300px / 0.4 quality ≈ 5-8KB archivo ≈ 7-10KB base64 — ajustar hasta que quepa
   let compressed = await compressImage(file, 300, 0.4);
   let b64 = await blobToBase64(compressed);
 
-  // Si aún es muy grande, comprimir más
-  if (b64.length > 4500) compressed = await compressImage(file, 200, 0.3);
-  if (b64.length > 4500) b64 = await blobToBase64(compressed);
+  // Si aún es muy grande, comprimir más (bug fix: re-asignar b64 tras nueva compresión)
+  if (b64.length > 4500) {
+    compressed = await compressImage(file, 200, 0.3);
+    b64 = await blobToBase64(compressed);
+  }
+  if (b64.length > 4500) {
+    compressed = await compressImage(file, 150, 0.25);
+    b64 = await blobToBase64(compressed);
+  }
 
   const filename = name.replace(/[^a-zA-Z0-9_-]/g,'_') + '_' + Date.now() + '.jpg';
 
-  const json = await jsonpFetch(CONFIG.SCRIPT_URL, {
-    action:   'uploadPhoto',
-    filename: filename,
-    mimeType: 'image/jpeg',
-    data:     b64
-  });
+  let json;
+  try {
+    json = await jsonpFetch(CONFIG.SCRIPT_URL, {
+      action:   'uploadPhoto',
+      filename: filename,
+      mimeType: 'image/jpeg',
+      data:     b64
+    });
+  } catch(e) {
+    // Mensaje más claro para el usuario
+    throw new Error('No se pudo subir la foto. Verifica que el Apps Script esté activo y redespliegado. Detalle: ' + e.message);
+  }
 
   if (json.error) throw new Error(json.error);
   if (!json.url)  throw new Error('El script no devolvió URL de la foto');
