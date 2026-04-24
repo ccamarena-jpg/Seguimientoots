@@ -1313,13 +1313,34 @@ function saveScriptUrl() { /* URL hardcodeada — no necesaria */ }
 function verifyConfigPass() { verifyAdminCode(); } // legacy alias
 
 async function testScriptConnection() {
-  showStatus('Probando conexión...', 'info');
+  const statusEl = document.getElementById('configStatus');
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = '#EFF6FF';
+    statusEl.style.border = '1px solid #BFDBFE';
+    statusEl.style.color = '#1D4ED8';
+    statusEl.textContent = '🔄 Probando conexión con: ' + CONFIG.SCRIPT_URL.substring(0,60) + '...';
+  }
   try {
     const data = await jsonpFetch(CONFIG.SCRIPT_URL, { action: 'getAll' });
     if (data.error) throw new Error(data.error);
-    showStatus('✅ Conectado — ' + (data.data ? data.data.length : 0) + ' registros en el Sheet', 'success');
+    const msg = '✅ Conectado — ' + (data.data ? data.data.length : 0) + ' registros en el Sheet';
+    if (statusEl) {
+      statusEl.style.background = '#F0FDF4';
+      statusEl.style.border = '1px solid #BBF7D0';
+      statusEl.style.color = '#16A34A';
+      statusEl.textContent = msg;
+    }
+    showToast(msg, 'success');
   } catch(e) {
-    showStatus('❌ Error: ' + e.message, 'error');
+    const msg = '❌ ' + e.message;
+    if (statusEl) {
+      statusEl.style.background = '#FEF2F2';
+      statusEl.style.border = '1px solid #FECACA';
+      statusEl.style.color = '#DC2626';
+      statusEl.textContent = msg;
+    }
+    showToast(msg, 'error');
   }
 }
 
@@ -1340,12 +1361,12 @@ function showStatus(msg, type) {
 // ══════════════════════════════════════════════
 function jsonpFetch(url, params) {
   return new Promise((resolve, reject) => {
-    const cbName = 'ttcb_' + Date.now();
+    const cbName = 'ttcb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const timeout = setTimeout(() => {
       delete window[cbName];
       const s = document.getElementById(cbName);
       if (s) s.remove();
-      reject(new Error('Timeout — verifica que el script esté desplegado como "Cualquier persona"'));
+      reject(new Error('Timeout (12s). Verifica que el script esté desplegado con acceso "Cualquier persona"'));
     }, 12000);
 
     window[cbName] = function(data) {
@@ -1365,7 +1386,13 @@ function jsonpFetch(url, params) {
       clearTimeout(timeout);
       delete window[cbName];
       script.remove();
-      reject(new Error('No se pudo conectar con el script'));
+      // Fallback: intentar con fetch directo (por si el script devuelve JSON sin JSONP)
+      fetch(url + '?' + Object.entries(params).map(([k,v]) => encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&'), {
+        mode: 'cors'
+      })
+      .then(r => r.json())
+      .then(data => { clearTimeout(timeout); resolve(data); })
+      .catch(() => reject(new Error('No se pudo conectar. Verifica: script desplegado como Web App con acceso "Cualquier persona"')));
     };
     document.head.appendChild(script);
   });
@@ -1386,11 +1413,20 @@ async function loadData() {
     allData = DEMO_DATA.map(r => [...r]);
   } else {
     try {
-      const json = await jsonpFetch(CONFIG.SCRIPT_URL, { action: 'getAll' });
+      // Intentar JSONP primero, luego fetch directo como fallback
+      let json;
+      try {
+        json = await jsonpFetch(CONFIG.SCRIPT_URL, { action: 'getAll' });
+      } catch(e1) {
+        // Fallback: fetch directo (funciona si el script tiene CORS habilitado)
+        const resp = await fetch(CONFIG.SCRIPT_URL + '?action=getAll');
+        json = await resp.json();
+      }
       if (json.error) throw new Error(json.error);
       allData = json.data || [];
+      showToast('✅ ' + allData.length + ' registros cargados', 'success');
     } catch(e) {
-      showToast('Error al cargar: ' + e.message, 'error');
+      showToast('Error al cargar datos: ' + e.message, 'error');
       allData = DEMO_DATA.map(r => [...r]);
       demoMode = true;
       updateConfigDot();
@@ -1845,7 +1881,7 @@ async function appendToSheet(row) {
     action: 'append',
     data: JSON.stringify(row)
   });
-  if (json.error) throw new Error(json.error);
+  if (json && json.error) throw new Error(json.error);
   return json;
 }
 
