@@ -1081,7 +1081,7 @@
 // CONFIG — Apps Script URL (sin OAuth, sin APIs)
 // ══════════════════════════════════════════════
 const CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxAoEmOjJWvVJSotAzzRfGKQKUrJ2lCrXKDxEtP95SNL-WNsAZnrHitClOMiNvnrvpHTg/exec'
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxwawyU1DtPn-hZR3VRN-q9gma0mxMBhwGw4ZmiF9J2B4RUDikvJ7Y8WKpDpSi68QJaFA/exec'
 };
 
 // ══════════════════════════════════════════════
@@ -1369,8 +1369,6 @@ function jsonpFetch(url, params) {
       reject(new Error('Timeout — sin respuesta del script'));
     }, 20000);
 
-    // El callback que llama el script dentro del iframe
-    // HtmlService ejecuta: parent.ttcb_xxx({...}) desde el iframe
     window[cbName] = (data) => {
       clearTimeout(timer);
       delete window[cbName];
@@ -1378,15 +1376,32 @@ function jsonpFetch(url, params) {
       resolve(data);
     };
 
-    const qs = Object.entries({ ...params, callback: 'parent.' + cbName })
+    const qs = Object.entries({ ...params, callback: cbName })
       .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v))
       .join('&');
 
-    // Usar iframe: HtmlService devuelve HTML con JS que llama parent.cb({...})
-    // El iframe ejecuta ese script, que llama parent.cbName en nuestro window
+    // iframe lee el body text (ej: "ttcb_123({...});") y lo evalúa
     const iframe = document.createElement('iframe');
     iframe.id = cbName;
     iframe.style.cssText = 'display:none;position:absolute;width:1px;height:1px';
+
+    iframe.onload = () => {
+      try {
+        const text = iframe.contentDocument?.body?.innerText || 
+                     iframe.contentWindow?.document?.body?.innerText || '';
+        if (text && text.includes(cbName)) {
+          // Ejecutar el callback en el contexto del padre
+          eval(text); // evalúa: ttcb_123({...})  → llama window[cbName]
+        }
+      } catch(e) {
+        // Si cross-origin bloquea lectura, intentar otra forma
+        clearTimeout(timer);
+        delete window[cbName];
+        iframe.remove();
+        reject(new Error('No se pudo leer la respuesta: ' + e.message));
+      }
+    };
+
     iframe.src = url + '?' + qs;
     document.body.appendChild(iframe);
   });
