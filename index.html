@@ -2,29 +2,6 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval'
-      https://script.google.com
-      https://script.googleusercontent.com
-      https://accounts.google.com
-      https://cdn.jsdelivr.net
-      https://cdnjs.cloudflare.com;
-    connect-src 'self'
-      https://script.google.com
-      https://script.googleusercontent.com
-      https://www.googleapis.com
-      https://accounts.google.com;
-    img-src 'self' data: blob:
-      https://drive.google.com
-      https://lh3.googleusercontent.com;
-    frame-src 'self'
-      https://accounts.google.com;
-    style-src 'self' 'unsafe-inline'
-      https://fonts.googleapis.com;
-    font-src 'self'
-      https://fonts.gstatic.com;
-  ">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TT Audit — GPS Trade Marketing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1104,7 +1081,7 @@
 // CONFIG — Apps Script URL (sin OAuth, sin APIs)
 // ══════════════════════════════════════════════
 const CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwQjyV3PACbS7of-46nMfGYorgIanckEcUKTo7s7MYLhyfcCyTeM8SJ0vap7SHkVD-zHw/exec'
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxAoEmOjJWvVJSotAzzRfGKQKUrJ2lCrXKDxEtP95SNL-WNsAZnrHitClOMiNvnrvpHTg/exec'
 };
 
 // ══════════════════════════════════════════════
@@ -1392,6 +1369,8 @@ function jsonpFetch(url, params) {
       reject(new Error('Timeout — sin respuesta del script'));
     }, 20000);
 
+    // El callback que llama el script dentro del iframe
+    // HtmlService ejecuta: parent.ttcb_xxx({...}) desde el iframe
     window[cbName] = (data) => {
       clearTimeout(timer);
       delete window[cbName];
@@ -1399,16 +1378,17 @@ function jsonpFetch(url, params) {
       resolve(data);
     };
 
-    const qs = Object.entries({ ...params, callback: cbName })
+    const qs = Object.entries({ ...params, callback: 'parent.' + cbName })
       .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v))
       .join('&');
 
-    const s = document.createElement('script');
-    s.id  = cbName;
-    s.src = url + '?' + qs;
-    // No ponemos onerror: Apps Script hace una redirección que el browser
-    // interpreta como error aunque el callback llegue bien.
-    document.head.appendChild(s);
+    // Usar iframe: HtmlService devuelve HTML con JS que llama parent.cb({...})
+    // El iframe ejecuta ese script, que llama parent.cbName en nuestro window
+    const iframe = document.createElement('iframe');
+    iframe.id = cbName;
+    iframe.style.cssText = 'display:none;position:absolute;width:1px;height:1px';
+    iframe.src = url + '?' + qs;
+    document.body.appendChild(iframe);
   });
 }
 
