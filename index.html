@@ -1081,7 +1081,7 @@
 // CONFIG — Apps Script URL (sin OAuth, sin APIs)
 // ══════════════════════════════════════════════
 const CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxo9TUmm7e9O7KQ1pX0nSy9dj711EfY_fLSAfWXpHXa56ZS5zt5tVfBY5zVrXwIe8-5Xw/exec'
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwgrGbqKmrPe3vcY3c-ijz6YKALW-iX1rbAQqUQBX0fBzjuzYxEtfJxofhU0RL7g_KbJQ/exec'
 };
 
 // ══════════════════════════════════════════════
@@ -1366,7 +1366,7 @@ function jsonpFetch(url, params) {
     const timeout = setTimeout(() => {
       delete window[cbName];
       document.getElementById(cbName)?.remove();
-      reject(new Error('Sin respuesta del script (timeout 20s)'));
+      reject(new Error('Sin respuesta del script'));
     }, 20000);
 
     window[cbName] = function(data) {
@@ -1379,12 +1379,53 @@ function jsonpFetch(url, params) {
     const qs = Object.entries({ ...params, callback: cbName })
       .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
 
-    const script = document.createElement('script');
-    script.id = cbName;
-    script.src = url + '?' + qs;
-    // NO ponemos onerror — Apps Script dispara onerror por la redirección
-    // aunque la respuesta llegue bien. Dejamos que el callback o el timeout resuelvan.
-    document.head.appendChild(script);
+    const iframe = document.createElement('iframe');
+    iframe.id = cbName;
+    iframe.style.cssText = 'display:none;width:0;height:0;border:0';
+    iframe.src = url + '?' + qs;
+
+    iframe.onload = () => {
+      try {
+        // Leer el texto del body del iframe
+        const body = iframe.contentDocument?.body?.innerText
+                  || iframe.contentWindow?.document?.body?.innerText
+                  || '';
+
+        if (body) {
+          // El body contiene: ttcb_123({"data":[...]})
+          // Extraer el JSON de dentro del callback
+          const m = body.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
+          if (m) {
+            clearTimeout(timeout);
+            delete window[cbName];
+            iframe.remove();
+            resolve(JSON.parse(m[1]));
+            return;
+          }
+          // O puede ser JSON puro
+          if (body.trim().startsWith('{') || body.trim().startsWith('[')) {
+            clearTimeout(timeout);
+            delete window[cbName];
+            iframe.remove();
+            resolve(JSON.parse(body.trim()));
+            return;
+          }
+        }
+        // Si no pudimos leer, dejar que el callback o timeout resuelvan
+      } catch(e) {
+        // Cross-origin bloqueó el acceso — el callback debería haberse ejecutado
+        // Si no se ejecutó, el timeout rechazará
+      }
+    };
+
+    iframe.onerror = () => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      iframe.remove();
+      reject(new Error('Error cargando el script'));
+    };
+
+    document.body.appendChild(iframe);
   });
 }
 
@@ -1392,31 +1433,20 @@ function jsonpFetch(url, params) {
 // LOAD DATA — vía JSONP (Apps Script) o demo
 // ══════════════════════════════════════════════
 async function loadData() {
-  // Solo actualizar tableBody si existe y está visible
   const tbody = document.getElementById('tableBody');
-  if (tbody) {
-    tbody.innerHTML = '<tr class="loading-row"><td colspan="13"><span class="spinner"></span>Cargando datos...</td></tr>';
-  }
+  if (tbody) tbody.innerHTML = '<tr class="loading-row"><td colspan="13"><span class="spinner"></span>Cargando datos...</td></tr>';
 
   if (demoMode) {
     await new Promise(r => setTimeout(r, 400));
     allData = DEMO_DATA.map(r => [...r]);
   } else {
     try {
-      // Intentar JSONP primero, luego fetch directo como fallback
-      let json;
-      try {
-        json = await jsonpFetch(CONFIG.SCRIPT_URL, { action: 'getAll' });
-      } catch(e1) {
-        // Fallback: fetch directo (funciona si el script tiene CORS habilitado)
-        const resp = await fetch(CONFIG.SCRIPT_URL + '?action=getAll');
-        json = await resp.json();
-      }
+      const json = await jsonpFetch(CONFIG.SCRIPT_URL, { action: 'getAll' });
       if (json.error) throw new Error(json.error);
       allData = json.data || [];
       showToast('✅ ' + allData.length + ' registros cargados', 'success');
     } catch(e) {
-      showToast('Error al cargar datos: ' + e.message, 'error');
+      showToast('Error: ' + e.message, 'error');
       allData = DEMO_DATA.map(r => [...r]);
       demoMode = true;
       updateConfigDot();
