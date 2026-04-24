@@ -1361,28 +1361,26 @@ function showStatus(msg, type) {
 // ══════════════════════════════════════════════
 async function jsonpFetch(url, params) {
   // Usar el proxy de Vercel para evitar CORS
-  // El proxy llama al Apps Script server-side sin restricciones
-  const qs = Object.entries(params)
-    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-
-  // Si estamos en Vercel, usar el proxy local /api/proxy
-  // Si estamos en localhost, llamar directo (para desarrollo)
-  const isVercel = window.location.hostname !== 'localhost' && 
+  const isVercel = window.location.hostname !== 'localhost' &&
                    window.location.hostname !== '127.0.0.1';
-  
-  const proxyUrl = isVercel 
-    ? '/api/proxy?' + qs
-    : url + '?' + qs;
 
-  const resp = await fetch(proxyUrl, {
-    method: 'GET',
-    cache: 'no-cache'
-  });
-
-  if (!resp.ok) throw new Error('Error HTTP: ' + resp.status);
-  
-  const json = await resp.json();
-  return json;
+  if (isVercel) {
+    // Enviar como POST con body JSON (evita límite de URL para data grandes)
+    const resp = await fetch('/api/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    if (!resp.ok) throw new Error('Error HTTP: ' + resp.status);
+    return await resp.json();
+  } else {
+    // Localhost: llamar directo con GET
+    const qs = Object.entries(params)
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+    const resp = await fetch(url + '?' + qs);
+    if (!resp.ok) throw new Error('Error HTTP: ' + resp.status);
+    return await resp.json();
+  }
 }
 
 // ══════════════════════════════════════════════
