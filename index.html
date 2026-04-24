@@ -1359,34 +1359,41 @@ function showStatus(msg, type) {
 // ══════════════════════════════════════════════
 // JSONP — resuelve CORS de Apps Script
 // ══════════════════════════════════════════════
-async function jsonpFetch(url, params) {
-  const qs = Object.entries(params)
-    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  const fullUrl = url + '?' + qs;
-  
-  // Apps Script redirige a googleusercontent.com — usar no-cors no funciona
-  // Usamos fetch con follow redirects + text parsing
-  try {
-    const resp = await fetch(fullUrl, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    const text = await resp.text();
-    // Puede venir como JSON puro o como callback(json)
-    const clean = text.trim();
-    if (clean.startsWith('{') || clean.startsWith('[')) {
-      return JSON.parse(clean);
-    }
-    // Extraer JSON de dentro del callback: funcname({...})
-    const m = clean.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
-    if (m) return JSON.parse(m[1]);
-    throw new Error('Respuesta inesperada del script');
-  } catch(e) {
-    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-      throw new Error('Sin conexión al script. Verifica acceso a internet.');
-    }
-    throw e;
-  }
+function jsonpFetch(url, params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'ttcb_' + Date.now();
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      try { document.getElementById(cbName)?.remove(); } catch(e){}
+      reject(new Error('Timeout — el script tardó demasiado'));
+    }, 20000);
+
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      try { document.getElementById(cbName)?.remove(); } catch(e){}
+      resolve(data);
+    };
+
+    // Apps Script redirige a googleusercontent.com — el script tag sigue la redirección sin problemas
+    const qs = Object.entries({ ...params, callback: cbName })
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+
+    const script = document.createElement('script');
+    script.id  = cbName;
+    script.type = 'text/javascript';
+    script.src  = url + '?' + qs;
+
+    // onerror solo se dispara si hay error real (no por la redirección)
+    script.onerror = () => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      script.remove();
+      reject(new Error('El script no respondió. Verifica que esté desplegado como Web App con acceso "Cualquier usuario"'));
+    };
+
+    document.head.appendChild(script);
+  });
 }
 
 // ══════════════════════════════════════════════
