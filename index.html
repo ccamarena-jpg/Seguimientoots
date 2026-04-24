@@ -1363,47 +1363,52 @@ function jsonpFetch(url, params) {
   return new Promise((resolve, reject) => {
     const cbName = 'ttcb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
 
-    const timer = setTimeout(() => {
-      delete window[cbName];
-      document.getElementById(cbName)?.remove();
-      reject(new Error('Timeout — sin respuesta del script'));
-    }, 20000);
-
-    window[cbName] = (data) => {
-      clearTimeout(timer);
-      delete window[cbName];
-      document.getElementById(cbName)?.remove();
-      resolve(data);
-    };
-
     const qs = Object.entries({ ...params, callback: cbName })
       .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v))
       .join('&');
 
-    // iframe lee el body text (ej: "ttcb_123({...});") y lo evalúa
-    const iframe = document.createElement('iframe');
-    iframe.id = cbName;
-    iframe.style.cssText = 'display:none;position:absolute;width:1px;height:1px';
+    const fullUrl = url + '?' + qs;
 
-    iframe.onload = () => {
+    // Registrar callback global para JSONP
+    window[cbName] = (data) => {
+      delete window[cbName];
+      resolve(data);
+    };
+
+    // Intentar XHR primero — a veces permite cross-origin cuando fetch no
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', fullUrl, true);
+    xhr.withCredentials = false;
+    xhr.timeout = 15000;
+
+    xhr.onload = () => {
+      const text = xhr.responseText || '';
+      // Parsear respuesta: puede ser JSONP "cb({...})" o JSON puro
       try {
-        const text = iframe.contentDocument?.body?.innerText || 
-                     iframe.contentWindow?.document?.body?.innerText || '';
-        if (text && text.includes(cbName)) {
-          // Ejecutar el callback en el contexto del padre
-          eval(text); // evalúa: ttcb_123({...})  → llama window[cbName]
+        if (text.startsWith('{') || text.startsWith('[')) {
+          delete window[cbName];
+          resolve(JSON.parse(text));
+          return;
         }
+        // JSONP: ejecutar el texto que llama window[cbName]({...})
+        eval(text); // eslint-disable-line no-eval
       } catch(e) {
-        // Si cross-origin bloquea lectura, intentar otra forma
-        clearTimeout(timer);
         delete window[cbName];
-        iframe.remove();
-        reject(new Error('No se pudo leer la respuesta: ' + e.message));
+        reject(new Error('Error parseando respuesta: ' + e.message));
       }
     };
 
-    iframe.src = url + '?' + qs;
-    document.body.appendChild(iframe);
+    xhr.onerror = () => {
+      delete window[cbName];
+      reject(new Error('XHR error — CORS bloqueado'));
+    };
+
+    xhr.ontimeout = () => {
+      delete window[cbName];
+      reject(new Error('Timeout XHR'));
+    };
+
+    xhr.send();
   });
 }
 
